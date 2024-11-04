@@ -47,6 +47,8 @@ class App {
 
       // Create the canvas that will contain our camera's background and our virtual scene.
       this.createXRCanvas();
+
+      document.body.classList.add('game-started');
       // With everything set up, start the app.
       await this.onSessionStarted();
     } catch(e) {
@@ -137,7 +139,7 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      if (reticle) {
+      if (this.reticle) {
         const direction = new THREE.Vector3();
         this.camera.getWorldDirection(direction); // Get the camera's forward direction
         this.reticle.position.copy(camera.position).add(direction.multiplyScalar(0.5)); // Place it 0.5 units in front of the camera

@@ -49,6 +49,19 @@ body.ar #enter-ar-info {
   display: none;
 }
 
+#score-display {
+  display: none;
+}
+
+body.game-started #score-display {
+  display: block;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: white;
+  font-size: 24px;
+}
+
 body.unsupported #unsupported-info {
   display: block;
 }
