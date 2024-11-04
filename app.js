@@ -258,7 +258,7 @@ function spawnAsteroid() {
   );
 
   // Set velocity to make it move toward the player
-  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.1);
+  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.5);
   app.scene.add(asteroid);
   app.asteroids.push(asteroid);
 }
