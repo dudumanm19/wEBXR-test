@@ -117,8 +117,8 @@ class App {
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
     // Bind the graphics framebuffer to the baseLayer's framebuffer.
-    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer)
+    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer;
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     this.renderer.setFramebuffer(framebuffer);
 
     // Retrieve the pose of the device.
@@ -138,6 +138,7 @@ class App {
 
       // If we have results, consider the environment stabilized.
       if (!this.stabilized) {
+        document.body.classList.add('stabilized');
         this.stabilized = true;
         if (!this.game_started) {
           this.game_started = true;
@@ -146,13 +147,15 @@ class App {
           // Start spawning obstacles every 2 seconds
           setInterval(spawnAsteroid, 2000);
         }
-        document.body.classList.add('stabilized');
       }
 
+      const direction = new THREE.Vector3();
+      this.camera.getWorldDirection(direction); // Get the camera's forward direction
       // Update the reticle position
-      app.reticle.visible = true;
-      app.reticle.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z -0.5)
-      app.reticle.updateMatrixWorld(true);
+      this.reticle.visible = true;
+      this.reticle.position.copy(this.camera.position).add(direction.multiplyScalar(0.5)); // 0.5 units in front of the camera
+      this.reticle.lookAt(camera.position); // Optional: Make the reticle face the camera
+      this.reticle.updateMatrixWorld(true);
 
       if (this.stabilized) {
         // Update lasers and check for collisions with asteroids
@@ -230,6 +233,7 @@ class App {
     const spaceBackground = new THREE.Mesh(spaceGeometry, spaceMaterial);
 
     this.scene.add(spaceBackground);
+    this.scene.add(this.reticle);
   }
 }
 
@@ -250,11 +254,11 @@ function spawnAsteroid() {
   asteroid.position.set(
       (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
       (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
-      -3                             // Z position - set farther away to simulate coming forward
+      -5                             // Z position - set farther away to simulate coming forward
   );
 
   // Set velocity to make it move toward the player
-  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.02);
+  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.1);
   app.scene.add(asteroid);
   app.asteroids.push(asteroid);
 }
