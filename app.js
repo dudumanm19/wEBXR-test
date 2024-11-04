@@ -9,6 +9,13 @@ spaceSound.volume = 0.5; // Adjust volume to make it subtle
 laserSound.volume = 0.7; // Set volume to 70%
 explosionSound.volume = 0.8; // Set volume to 80%
 
+let asteroidModel;
+
+window.gltfLoader = new THREE.GLTFLoader();
+gltfLoader.load("assets/asteroid.gltf", (gltf) => {
+  asteroidModel = gltf.scene;
+});
+
 /**
  * Query for WebXR support. If there's no support for the `immersive-ar` mode,
  * show an error.
@@ -81,7 +88,7 @@ class App {
 
     this.lasers = []; // Array to keep track of lasers
     // Start background space sound
-    spaceSound.play();
+    await spaceSound.play();
 
     // Setup an XRReferenceSpace using the "local" coordinate system.
     this.localReferenceSpace = await this.xrSession.requestReferenceSpace('local');
@@ -98,9 +105,9 @@ class App {
     this.xrSession.addEventListener("deviceorientation", this.handleOrientation, true);
 
     // Fire lasers every 200 milliseconds
-    setInterval(this.createLaser, 200);
+    setInterval(createLaser, 200);
     // Start spawning obstacles every 2 seconds
-    setInterval(this.spawnObstacle, 2000);
+    setInterval(spawnAsteroid, 2000);
   }
 
   /**
@@ -148,38 +155,6 @@ class App {
         this.reticle.updateMatrixWorld(true);
       }
 
-      this.lasers.forEach((laser, laserIndex) => {
-        // Move laser forward
-        laser.position.add(laser.userData.velocity);
-
-        // Check if the laser is far enough to be removed
-        if (laser.position.z < -5) {
-          // Remove laser if it’s too far forward
-          this.scene.remove(laser);
-          this.lasers.splice(laserIndex, 1);
-          return;
-        }
-
-        // Check for collision with asteroids
-        app.asteroids.forEach((asteroid, asteroidIndex) => {
-          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
-            // Collision detected, remove both laser and asteroid
-            console.log("Hit!");
-            app.score += 1;
-
-            this.scene.remove(laser);
-            this.scene.remove(asteroid);
-
-            this.lasers.splice(laserIndex, 1);
-            this.asteroids.splice(asteroidIndex, 1);
-
-            // Play explosion sound
-            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
-            explosionSound.play();
-          }
-        });
-      });
-
       // Render the scene with THREE.WebGLRenderer.
       this.renderer.render(this.scene, this.camera);
     }
@@ -206,7 +181,7 @@ class App {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Initialize our demo scene.
-    this.scene = Scenes.createLitScene();
+    this.scene = new THREE.Scene();
     this.reticle = new Reticle();
     this.scene.add(this.reticle);
 
@@ -223,54 +198,58 @@ class App {
 
     this.scene.add(spaceBackground);
   }
-
-  spawnObstacle() {
-    const asteroid = asteroidModel.clone();
-
-    // Position the asteroid at a random location in front of the player
-    asteroid.position.set(
-        (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
-        (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
-        -3                             // Z position - set farther away to simulate coming forward
-    );
-
-    // Set velocity to make it move toward the player
-    asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.02);
-    this.scene.add(this.asteroid);
-    this.asteroids.push(this.asteroid);
-  }
-
-  handleOrientation(event) {
-    const gamma = event.gamma; // Left/right tilt (in degrees)
-
-    // Map gamma (-45 to 45) to our desired movement range (-1 to 1)
-    const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
-    this.shipXPosition = tiltAmount * 1.5; // Adjust multiplier for range
-
-    // Update the reticle (or spaceship) position to reflect movement
-    if (this.reticle) {
-      this.reticle.position.x = shipXPosition;
-    }
-  }
-
-  createLaser() {
-    const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-    const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const laser = new THREE.Mesh(laserGeometry, laserMaterial);
-
-    // Position the laser in front of the ship
-    laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
-    laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
-
-    laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Laser speed moving forward
-    this.scene.add(laser);
-    this.lasers.push(laser);
-
-    // Play laser sound
-    laserSound.currentTime = 0; // Reset to start for overlapping shots
-    laserSound.play();
-  }
-
 }
 
 window.app = new App();
+
+function onNoXRDevice() {
+  document.body.classList.add('unsupported');
+}
+
+
+function spawnAsteroid() {
+  const asteroid = asteroidModel.clone();
+
+  // Position the asteroid at a random location in front of the player
+  asteroid.position.set(
+      (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
+      (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
+      -3                             // Z position - set farther away to simulate coming forward
+  );
+
+  // Set velocity to make it move toward the player
+  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.02);
+  app.scene.add(asteroid);
+  app.asteroids.push(asteroid);
+}
+
+function handleOrientation(event) {
+  const gamma = event.gamma; // Left/right tilt (in degrees)
+
+  // Map gamma (-45 to 45) to our desired movement range (-1 to 1)
+  const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
+  app.shipXPosition = tiltAmount * 1.5; // Adjust multiplier for range
+
+  // Update the reticle (or spaceship) position to reflect movement
+  if (this.reticle) {
+    app.reticle.position.x = shipXPosition;
+  }
+}
+
+function createLaser() {
+  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
+  const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const laser = new THREE.Mesh(laserGeometry, laserMaterial);
+
+  // Position the laser in front of the ship
+  laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
+  laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
+
+  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Laser speed moving forward
+  app.scene.add(laser);
+  app.lasers.push(laser);
+
+  // Play laser sound
+  laserSound.currentTime = 0; // Reset to start for overlapping shots
+  laserSound.play();
+}
