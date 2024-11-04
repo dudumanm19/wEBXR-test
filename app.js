@@ -149,13 +149,14 @@ class App {
         }
       }
 
+      // Get the camera's forward direction
       const direction = new THREE.Vector3();
       this.camera.getWorldDirection(direction); // Get the camera's forward direction
-      // Update the reticle position
-      this.reticle.visible = true;
-      this.reticle.position.copy(this.camera.position).add(direction.multiplyScalar(0.5)); // 0.5 units in front of the camera
-      this.reticle.lookAt(camera.position); // Optional: Make the reticle face the camera
-      this.reticle.updateMatrixWorld(true);
+
+      // Update the reticle position to be in front of the camera
+      this.reticle.visible = true; // Ensure reticle is visible
+      this.reticle.position.copy(this.camera.position).add(direction.multiplyScalar(0.5)); // Adjust the distance as needed
+      this.reticle.lookAt(this.camera.position); // Make the reticle face the camera
 
       if (this.stabilized) {
         // Update lasers and check for collisions with asteroids
