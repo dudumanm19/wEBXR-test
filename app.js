@@ -138,24 +138,14 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      // Conduct hit test.
-      const hitTestResults = frame.getHitTestResults(this.hitTestSource);
-
-      // If we have results, consider the environment stabilized.
-      if (!this.stabilized && hitTestResults.length > 0) {
-        this.stabilized = true;
-        document.body.classList.add('stabilized');
-      }
-      if (hitTestResults.length > 0) {
-        const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
-
-        // Update the reticle position
-        app.reticle.visible = true;
-        app.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
-        app.reticle.updateMatrixWorld(true);
+      if (reticle) {
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction); // Get the camera's forward direction
+        this.reticle.position.copy(camera.position).add(direction.multiplyScalar(0.5)); // Place it 0.5 units in front of the camera
+        this.reticle.lookAt(camera.position); // Make it face the camera (optional)
       }
 
-      if (this.stabilized) {
+      if (true) {
         // Update lasers and check for collisions with asteroids
         app.lasers.forEach((laser, laserIndex) => {
           // Move laser forward
@@ -217,7 +207,7 @@ class App {
 
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
-    this.reticle = new Reticle();
+    this.reticle = createReticle();
     this.scene.add(this.reticle);
 
     // We'll update the camera matrices directly from API, so
@@ -290,4 +280,15 @@ function createLaser() {
   // Play laser sound
   laserSound.currentTime = 0; // Reset to start for overlapping shots
   laserSound.play();
+}
+
+function createReticle() {
+  const geometry = new THREE.CircleGeometry(0.02, 32); // 0.02 units in radius
+  const material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
+  const reticle = new THREE.Mesh(geometry, material);
+  reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
+  reticle.visible = true; // Set to true to show the reticle initially
+  scene.add(reticle);
+
+  return reticle;
 }
