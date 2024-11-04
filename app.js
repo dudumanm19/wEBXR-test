@@ -4,10 +4,10 @@ const explosionSound = new Audio('assets/explosion.mp3');
 const spaceSound = new Audio('assets/space_ambiance.mp3');
 
 spaceSound.loop = true;  // Enable looping
-spaceSound.volume = 0.5; // Adjust volume to make it subtle
+spaceSound.volume = 0.7; // Adjust volume to make it subtle
 
-laserSound.volume = 0.7; // Set volume to 70%
-explosionSound.volume = 0.8; // Set volume to 80%
+laserSound.volume = 0.4; // Set volume to 40%
+explosionSound.volume = 0.6; // Set volume to 60%
 
 let asteroidModel;
 
@@ -102,7 +102,7 @@ class App {
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
     // Attach event listener for device orientation
-    this.xrSession.addEventListener("deviceorientation", this.handleOrientation, true);
+    this.xrSession.addEventListener("deviceorientation", handleOrientation, true);
 
     // Fire lasers every 200 milliseconds
     setInterval(createLaser, 200);
@@ -150,10 +150,43 @@ class App {
         const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
 
         // Update the reticle position
-        this.reticle.visible = true;
-        this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
-        this.reticle.updateMatrixWorld(true);
+        app.reticle.visible = true;
+        app.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
+        app.reticle.updateMatrixWorld(true);
       }
+
+      // Update lasers and check for collisions with asteroids
+      app.lasers.forEach((laser, laserIndex) => {
+        // Move laser forward
+        laser.position.add(laser.userData.velocity);
+
+        // Check if the laser is far enough to be removed
+        if (laser.position.z < -5) {
+          // Remove laser if it’s too far forward
+          app.scene.remove(laser);
+          app.lasers.splice(laserIndex, 1);
+          return;
+        }
+
+        // Check for collision with asteroids
+        app.asteroids.forEach((asteroid, asteroidIndex) => {
+          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
+            // Collision detected, remove both laser and asteroid
+            console.log("Hit!");
+            app.score += 1;
+
+            app.scene.remove(laser);
+            app.scene.remove(asteroid);
+
+            app.lasers.splice(laserIndex, 1);
+            app.asteroids.splice(asteroidIndex, 1);
+
+            // Play explosion sound
+            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
+            explosionSound.play();
+          }
+        });
+      });
 
       // Render the scene with THREE.WebGLRenderer.
       this.renderer.render(this.scene, this.camera);
