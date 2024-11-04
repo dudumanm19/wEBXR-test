@@ -71,9 +71,6 @@ class App {
     // Add the `ar` class to our body, which will hide our 2D components
     document.body.classList.add('ar');
 
-    // Start spawning obstacles every 2 seconds
-    setInterval(this.spawnObstacle, 2000);
-
     // To help with working with 3D on the web, we'll use three.js.
     this.setupThreeJs();
 
@@ -83,10 +80,6 @@ class App {
     this.shipXPosition = 0;
 
     this.lasers = []; // Array to keep track of lasers
-
-    // Fire lasers every 200 milliseconds
-    setInterval(this.createLaser, 200);
-
     // Start background space sound
     spaceSound.play();
 
@@ -101,9 +94,13 @@ class App {
     // Start a rendering loop using this.onXRFrame.
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
-
     // Attach event listener for device orientation
     this.xrSession.addEventListener("deviceorientation", this.handleOrientation, true);
+
+    // Fire lasers every 200 milliseconds
+    setInterval(this.createLaser, 200);
+    // Start spawning obstacles every 2 seconds
+    setInterval(this.spawnObstacle, 2000);
   }
 
   /**
@@ -224,7 +221,7 @@ class App {
     const spaceMaterial = new THREE.MeshBasicMaterial({ map: spaceTexture, side: THREE.BackSide });
     const spaceBackground = new THREE.Mesh(spaceGeometry, spaceMaterial);
 
-    app.scene.add(spaceBackground);
+    this.scene.add(spaceBackground);
   }
 
   spawnObstacle() {
