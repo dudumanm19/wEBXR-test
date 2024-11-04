@@ -117,8 +117,8 @@ class App {
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
     // Bind the graphics framebuffer to the baseLayer's framebuffer.
-    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer;
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer)
     this.renderer.setFramebuffer(framebuffer);
 
     // Retrieve the pose of the device.
@@ -136,9 +136,9 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
+      const hitTestResults = frame.getHitTestResults(this.hitTestSource);
       // If we have results, consider the environment stabilized.
-      if (!this.stabilized) {
-        document.body.classList.add('stabilized');
+      if (!this.stabilized && hitTestResults.length > 0) {
         this.stabilized = true;
         if (!this.game_started) {
           this.game_started = true;
@@ -147,16 +147,16 @@ class App {
           // Start spawning obstacles every 2 seconds
           setInterval(spawnAsteroid, 2000);
         }
+        document.body.classList.add('stabilized');
       }
 
-      // Get the camera's forward direction
-      const direction = new THREE.Vector3();
-      this.camera.getWorldDirection(direction); // Get the camera's forward direction
-
-      // Update the reticle position to be in front of the camera
-      this.reticle.visible = true; // Ensure reticle is visible
-      this.reticle.position.copy(this.camera.position).add(direction.multiplyScalar(0.5)); // Adjust the distance as needed
-      this.reticle.lookAt(this.camera.position); // Make the reticle face the camera
+      if (hitTestResults.length > 0) {
+        const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
+        // Update the reticle position
+        app.reticle.visible = true;
+        app.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
+        app.reticle.updateMatrixWorld(true);
+      }
 
       if (this.stabilized) {
         // Update lasers and check for collisions with asteroids
@@ -234,7 +234,6 @@ class App {
     const spaceBackground = new THREE.Mesh(spaceGeometry, spaceMaterial);
 
     this.scene.add(spaceBackground);
-    this.scene.add(this.reticle);
   }
 }
 
