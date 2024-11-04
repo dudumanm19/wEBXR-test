@@ -1,18 +1,3 @@
-/*
- * Copyright 2017 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the 'License');
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Query for WebXR support. If there's no support for the `immersive-ar` mode,
  * show an error.
@@ -75,8 +60,16 @@ class App {
     // Add the `ar` class to our body, which will hide our 2D components
     document.body.classList.add('ar');
 
+    // Start spawning obstacles every 2 seconds
+    setInterval(this.spawnObstacle, 2000);
+
     // To help with working with 3D on the web, we'll use three.js.
     this.setupThreeJs();
+
+    this.asteroids = [];
+    this.score = 0; // Initialize score
+    // Initialize the ship's X position
+    this.shipXPosition = 0;
 
     // Setup an XRReferenceSpace using the "local" coordinate system.
     this.localReferenceSpace = await this.xrSession.requestReferenceSpace('local');
@@ -89,19 +82,9 @@ class App {
     // Start a rendering loop using this.onXRFrame.
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
-    this.xrSession.addEventListener("select", this.onSelect);
-  }
 
-  /** Place a sunflower when the screen is tapped. */
-  onSelect = () => {
-    if (window.sunflower) {
-      const clone = window.sunflower.clone();
-      clone.position.copy(this.reticle.position);
-      this.scene.add(clone)
-
-      const shadowMesh = this.scene.children.find(c => c.name === 'shadowMesh');
-      shadowMesh.position.y = clone.position.y;
-    }
+    // Attach event listener for device orientation
+    this.xrSession.addEventListener("deviceorientation", this.handleOrientation, true);
   }
 
   /**
@@ -150,8 +133,30 @@ class App {
       }
 
       // Render the scene with THREE.WebGLRenderer.
-      this.renderer.render(this.scene, this.camera)
+      this.renderer.render(this.scene, this.camera);
+
+      // Update obstacles and check for collisions
+      this.asteroids.forEach((asteroid, index) => {
+        // Move the obstacle downwards
+        asteroid.position.add(asteroid.userData.velocity);
+
+        // Check for collision with a small "ship zone" near the camera position
+        if (asteroid.position.distanceTo(app.reticle.position) > -0.1) { // Adjust for distance as needed
+          console.log("Collision!"); // Indicate a collision with the player's ship
+          this.score -= 1;
+          this.scene.remove(asteroid);
+          this.asteroids.splice(index, 1);
+        } else if (asteroid.position.distanceTo(app.reticle.position) > 1) {
+          // Remove asteroids that move past the player
+          this.scene.remove(asteroid);
+          this.asteroids.splice(index, 1);
+          this.score += 1;
+        }
+      });
     }
+
+    // Update score display
+    document.getElementById("score-value").textContent = app.score;
   }
 
   /**
@@ -172,7 +177,7 @@ class App {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Initialize our demo scene.
-    this.scene = DemoUtils.createLitScene();
+    this.scene = Scenes.createLitScene();
     this.reticle = new Reticle();
     this.scene.add(this.reticle);
 
@@ -181,7 +186,44 @@ class App {
     // to handle the matrices independently.
     this.camera = new THREE.PerspectiveCamera();
     this.camera.matrixAutoUpdate = false;
+
+    const spaceTexture = new THREE.TextureLoader().load('assets/space_texture.png');
+    const spaceGeometry = new THREE.SphereGeometry(100, 64, 64);
+    const spaceMaterial = new THREE.MeshBasicMaterial({ map: spaceTexture, side: THREE.BackSide });
+    const spaceBackground = new THREE.Mesh(spaceGeometry, spaceMaterial);
+
+    app.scene.add(spaceBackground);
   }
+
+  spawnObstacle() {
+    const asteroid = asteroidModel.clone();
+
+    // Position the asteroid at a random location in front of the player
+    asteroid.position.set(
+        (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
+        (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
+        -3                             // Z position - set farther away to simulate coming forward
+    );
+
+    // Set velocity to make it move toward the player
+    asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.02);
+    this.scene.add(this.asteroid);
+    this.asteroids.push(this.asteroid);
+  }
+
+  handleOrientation(event) {
+    const gamma = event.gamma; // Left/right tilt (in degrees)
+
+    // Map gamma (-45 to 45) to our desired movement range (-1 to 1)
+    const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
+    this.shipXPosition = tiltAmount * 1.5; // Adjust multiplier for range
+
+    // Update the reticle (or spaceship) position to reflect movement
+    if (this.reticle) {
+      this.reticle.position.x = shipXPosition;
+    }
+  }
+
 }
 
 window.app = new App();
