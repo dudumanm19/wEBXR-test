@@ -214,7 +214,7 @@ class App {
     this.reticle = new THREE.Mesh(geometry, material);
     this.reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
     this.reticle.visible = true; // Set to true to show the reticle initially
-    this.scene.add(reticle);
+    this.scene.add(this.reticle);
 
     this.scene.add(this.reticle);
 
