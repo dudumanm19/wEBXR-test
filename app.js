@@ -155,38 +155,40 @@ class App {
         app.reticle.updateMatrixWorld(true);
       }
 
-      // Update lasers and check for collisions with asteroids
-      app.lasers.forEach((laser, laserIndex) => {
-        // Move laser forward
-        laser.position.add(laser.userData.velocity);
+      if (this.stabilized) {
+        // Update lasers and check for collisions with asteroids
+        app.lasers.forEach((laser, laserIndex) => {
+          // Move laser forward
+          laser.position.add(laser.userData.velocity);
 
-        // Check if the laser is far enough to be removed
-        if (laser.position.z < -5) {
-          // Remove laser if it’s too far forward
-          app.scene.remove(laser);
-          app.lasers.splice(laserIndex, 1);
-          return;
-        }
-
-        // Check for collision with asteroids
-        app.asteroids.forEach((asteroid, asteroidIndex) => {
-          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
-            // Collision detected, remove both laser and asteroid
-            console.log("Hit!");
-            app.score += 1;
-
+          // Check if the laser is far enough to be removed
+          if (laser.position.z < -5) {
+            // Remove laser if it’s too far forward
             app.scene.remove(laser);
-            app.scene.remove(asteroid);
-
             app.lasers.splice(laserIndex, 1);
-            app.asteroids.splice(asteroidIndex, 1);
-
-            // Play explosion sound
-            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
-            explosionSound.play();
+            return;
           }
+
+          // Check for collision with asteroids
+          app.asteroids.forEach((asteroid, asteroidIndex) => {
+            if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
+              // Collision detected, remove both laser and asteroid
+              console.log("Hit!");
+              app.score += 1;
+
+              app.scene.remove(laser);
+              app.scene.remove(asteroid);
+
+              app.lasers.splice(laserIndex, 1);
+              app.asteroids.splice(asteroidIndex, 1);
+
+              // Play explosion sound
+              explosionSound.currentTime = 0; // Reset to start for overlapping explosions
+              explosionSound.play();
+            }
+          });
         });
-      });
+      }
 
       // Render the scene with THREE.WebGLRenderer.
       this.renderer.render(this.scene, this.camera);
@@ -241,7 +243,10 @@ function onNoXRDevice() {
 
 
 function spawnAsteroid() {
-  const asteroid = asteroidModel.clone();
+  //const asteroid = asteroidModel.clone();
+  const geometry = new THREE.SphereGeometry(0.1, 32, 32); // Adjust size as needed
+  const material = new THREE.MeshBasicMaterial({ color: 0x666666 });
+  const asteroid = new THREE.Mesh(geometry, material);
 
   // Position the asteroid at a random location in front of the player
   asteroid.position.set(
@@ -265,7 +270,7 @@ function handleOrientation(event) {
 
   // Update the reticle (or spaceship) position to reflect movement
   if (this.reticle) {
-    app.reticle.position.x = shipXPosition;
+    app.reticle.position.x = app.shipXPosition;
   }
 }
 
