@@ -136,10 +136,8 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      const hitTestResults = frame.getHitTestResults(this.hitTestSource);
-
       // If we have results, consider the environment stabilized.
-      if (!this.stabilized && hitTestResults.length > 0) {
+      if (!this.stabilized) {
         this.stabilized = true;
         if (!this.game_started) {
           this.game_started = true;
@@ -151,13 +149,10 @@ class App {
         document.body.classList.add('stabilized');
       }
 
-      if (hitTestResults.length > 0) {
-        const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
-        // Update the reticle position
-        app.reticle.visible = true;
-        app.reticle.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z -0.5)
-        app.reticle.updateMatrixWorld(true);
-      }
+      // Update the reticle position
+      app.reticle.visible = true;
+      app.reticle.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z -0.5)
+      app.reticle.updateMatrixWorld(true);
 
       if (this.stabilized) {
         // Update lasers and check for collisions with asteroids
