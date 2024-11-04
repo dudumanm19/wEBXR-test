@@ -150,15 +150,15 @@ class App {
         document.body.classList.add('stabilized');
       }
 
+      if (hitTestResults.length > 0) {
+        const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
+        // Update the reticle position
+        app.reticle.visible = true;
+        app.reticle.position.set(app.camera.transform.position.x - 0.5, app.camera.transform.position.y, app.camera.transform.position.z)
+        app.reticle.updateMatrixWorld(true);
+      }
+
       if (this.stabilized) {
-        if (this.reticle) {
-          const direction = new THREE.Vector3();
-          this.camera.getWorldDirection(direction); // Get the camera's forward direction
-          this.reticle.position.copy(camera.position).add(direction.multiplyScalar(0.5)); // Place it 0.5 units in front of the camera
-          this.reticle.lookAt(camera.position); // Make it face the camera (optional)
-        }
-
-
         // Update lasers and check for collisions with asteroids
         app.lasers.forEach((laser, laserIndex) => {
           // Move laser forward
@@ -220,13 +220,7 @@ class App {
 
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
-
-    const geometry = new THREE.CircleGeometry(0.02, 32); // 0.02 units in radius
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
-    this.reticle = new THREE.Mesh(geometry, material);
-    this.reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
-    this.reticle.visible = true; // Set to true to show the reticle initially
-    this.scene.add(this.reticle);
+    this.reticle = new Reticle();
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
