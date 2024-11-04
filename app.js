@@ -89,6 +89,7 @@ class App {
 
     this.lasers = []; // Array to keep track of lasers
     this.game_started = false;
+    this.stabilized = false;
     // Start background space sound
     await spaceSound.play();
 
@@ -140,6 +141,7 @@ class App {
       if (!this.stabilized && hitTestResults.length > 0) {
         this.stabilized = true;
         if (!this.game_started) {
+          this.game_started = true;
           // Fire lasers every 200 milliseconds
           setInterval(createLaser, 200);
           // Start spawning obstacles every 2 seconds
@@ -224,8 +226,6 @@ class App {
     this.reticle = new THREE.Mesh(geometry, material);
     this.reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
     this.reticle.visible = true; // Set to true to show the reticle initially
-    this.scene.add(this.reticle);
-
     this.scene.add(this.reticle);
 
     // We'll update the camera matrices directly from API, so
