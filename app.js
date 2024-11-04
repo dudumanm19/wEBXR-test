@@ -16,6 +16,9 @@ gltfLoader.load("assets/asteroid.gltf", (gltf) => {
   asteroidModel = gltf.scene;
 });
 
+document.getElementById('unsupported-info').style.display = 'none';
+document.getElementById('score-display').style.display = 'none';
+
 /**
  * Query for WebXR support. If there's no support for the `immersive-ar` mode,
  * show an error.
@@ -48,6 +51,8 @@ class App {
       // Create the canvas that will contain our camera's background and our virtual scene.
       this.createXRCanvas();
 
+      document.getElementById('unsupported-info').style.display = 'block';
+      document.getElementById('score-display').style.display = 'block';
       // With everything set up, start the app.
       await this.onSessionStarted();
     } catch(e) {
@@ -207,7 +212,14 @@ class App {
 
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
-    this.reticle = createReticle();
+
+    const geometry = new THREE.CircleGeometry(0.02, 32); // 0.02 units in radius
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
+    this.reticle = new THREE.Mesh(geometry, material);
+    this.reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
+    this.reticle.visible = true; // Set to true to show the reticle initially
+    this.scene.add(reticle);
+
     this.scene.add(this.reticle);
 
     // We'll update the camera matrices directly from API, so
@@ -266,7 +278,7 @@ function handleOrientation(event) {
 
 function createLaser() {
   const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-  const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const laserMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
   // Position the laser in front of the ship
@@ -280,15 +292,4 @@ function createLaser() {
   // Play laser sound
   laserSound.currentTime = 0; // Reset to start for overlapping shots
   laserSound.play();
-}
-
-function createReticle() {
-  const geometry = new THREE.CircleGeometry(0.02, 32); // 0.02 units in radius
-  const material = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
-  const reticle = new THREE.Mesh(geometry, material);
-  reticle.position.z = -0.5; // Position it 0.5 units in front of the camera
-  reticle.visible = true; // Set to true to show the reticle initially
-  scene.add(reticle);
-
-  return reticle;
 }
