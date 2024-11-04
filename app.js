@@ -1,3 +1,14 @@
+// Load the laser and explosion sounds
+const laserSound = new Audio('assets/laser.mp3');
+const explosionSound = new Audio('assets/explosion.mp3');
+const spaceSound = new Audio('assets/space_ambiance.mp3');
+
+spaceSound.loop = true;  // Enable looping
+spaceSound.volume = 0.5; // Adjust volume to make it subtle
+
+laserSound.volume = 0.7; // Set volume to 70%
+explosionSound.volume = 0.8; // Set volume to 80%
+
 /**
  * Query for WebXR support. If there's no support for the `immersive-ar` mode,
  * show an error.
@@ -71,6 +82,14 @@ class App {
     // Initialize the ship's X position
     this.shipXPosition = 0;
 
+    this.lasers = []; // Array to keep track of lasers
+
+    // Fire lasers every 200 milliseconds
+    setInterval(this.createLaser, 200);
+
+    // Start background space sound
+    spaceSound.play();
+
     // Setup an XRReferenceSpace using the "local" coordinate system.
     this.localReferenceSpace = await this.xrSession.requestReferenceSpace('local');
 
@@ -132,27 +151,40 @@ class App {
         this.reticle.updateMatrixWorld(true);
       }
 
+      this.lasers.forEach((laser, laserIndex) => {
+        // Move laser forward
+        laser.position.add(laser.userData.velocity);
+
+        // Check if the laser is far enough to be removed
+        if (laser.position.z < -5) {
+          // Remove laser if it’s too far forward
+          this.scene.remove(laser);
+          this.lasers.splice(laserIndex, 1);
+          return;
+        }
+
+        // Check for collision with asteroids
+        app.asteroids.forEach((asteroid, asteroidIndex) => {
+          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
+            // Collision detected, remove both laser and asteroid
+            console.log("Hit!");
+            app.score += 1;
+
+            this.scene.remove(laser);
+            this.scene.remove(asteroid);
+
+            this.lasers.splice(laserIndex, 1);
+            this.asteroids.splice(asteroidIndex, 1);
+
+            // Play explosion sound
+            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
+            explosionSound.play();
+          }
+        });
+      });
+
       // Render the scene with THREE.WebGLRenderer.
       this.renderer.render(this.scene, this.camera);
-
-      // Update obstacles and check for collisions
-      this.asteroids.forEach((asteroid, index) => {
-        // Move the obstacle downwards
-        asteroid.position.add(asteroid.userData.velocity);
-
-        // Check for collision with a small "ship zone" near the camera position
-        if (asteroid.position.distanceTo(app.reticle.position) > -0.1) { // Adjust for distance as needed
-          console.log("Collision!"); // Indicate a collision with the player's ship
-          this.score -= 1;
-          this.scene.remove(asteroid);
-          this.asteroids.splice(index, 1);
-        } else if (asteroid.position.distanceTo(app.reticle.position) > 1) {
-          // Remove asteroids that move past the player
-          this.scene.remove(asteroid);
-          this.asteroids.splice(index, 1);
-          this.score += 1;
-        }
-      });
     }
 
     // Update score display
@@ -222,6 +254,24 @@ class App {
     if (this.reticle) {
       this.reticle.position.x = shipXPosition;
     }
+  }
+
+  createLaser() {
+    const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
+    const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const laser = new THREE.Mesh(laserGeometry, laserMaterial);
+
+    // Position the laser in front of the ship
+    laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
+    laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
+
+    laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Laser speed moving forward
+    this.scene.add(laser);
+    this.lasers.push(laser);
+
+    // Play laser sound
+    laserSound.currentTime = 0; // Reset to start for overlapping shots
+    laserSound.play();
   }
 
 }
