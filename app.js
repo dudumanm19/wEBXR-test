@@ -182,6 +182,6 @@ class App {
     this.camera = new THREE.PerspectiveCamera();
     this.camera.matrixAutoUpdate = false;
   }
-};
+}
 
 window.app = new App();
