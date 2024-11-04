@@ -49,6 +49,8 @@ class App {
       this.createXRCanvas();
 
       document.body.classList.add('game-started');
+      this.game_started = false;
+      this.stabilized = false;
       // With everything set up, start the app.
       await this.onSessionStarted();
     } catch(e) {
@@ -88,8 +90,6 @@ class App {
     this.shipXPosition = 0;
 
     this.lasers = []; // Array to keep track of lasers
-    this.game_started = false;
-    this.stabilized = false;
     // Start background space sound
     await spaceSound.play();
 
@@ -137,6 +137,7 @@ class App {
       this.camera.updateMatrixWorld(true);
 
       const hitTestResults = frame.getHitTestResults(this.hitTestSource);
+
       // If we have results, consider the environment stabilized.
       if (!this.stabilized && hitTestResults.length > 0) {
         this.stabilized = true;
@@ -154,7 +155,7 @@ class App {
         const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
         // Update the reticle position
         app.reticle.visible = true;
-        app.reticle.position.set(app.camera.transform.position.x - 0.5, app.camera.transform.position.y, app.camera.transform.position.z)
+        app.reticle.position.set(app.camera.position.x, app.camera.position.y, app.camera.position.z -0.5)
         app.reticle.updateMatrixWorld(true);
       }
 
