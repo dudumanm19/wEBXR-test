@@ -88,6 +88,7 @@ class App {
     this.shipXPosition = 0;
 
     this.lasers = []; // Array to keep track of lasers
+    this.game_started = false;
     // Start background space sound
     await spaceSound.play();
 
@@ -104,11 +105,6 @@ class App {
 
     // Attach event listener for device orientation
     this.xrSession.addEventListener("deviceorientation", handleOrientation, true);
-
-    // Fire lasers every 200 milliseconds
-    setInterval(createLaser, 200);
-    // Start spawning obstacles every 2 seconds
-    setInterval(spawnAsteroid, 2000);
   }
 
   /**
@@ -139,14 +135,28 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      if (this.reticle) {
-        const direction = new THREE.Vector3();
-        this.camera.getWorldDirection(direction); // Get the camera's forward direction
-        this.reticle.position.copy(camera.position).add(direction.multiplyScalar(0.5)); // Place it 0.5 units in front of the camera
-        this.reticle.lookAt(camera.position); // Make it face the camera (optional)
+      const hitTestResults = frame.getHitTestResults(this.hitTestSource);
+      // If we have results, consider the environment stabilized.
+      if (!this.stabilized && hitTestResults.length > 0) {
+        this.stabilized = true;
+        if (!this.game_started) {
+          // Fire lasers every 200 milliseconds
+          setInterval(createLaser, 200);
+          // Start spawning obstacles every 2 seconds
+          setInterval(spawnAsteroid, 2000);
+        }
+        document.body.classList.add('stabilized');
       }
 
-      if (true) {
+      if (this.stabilized) {
+        if (this.reticle) {
+          const direction = new THREE.Vector3();
+          this.camera.getWorldDirection(direction); // Get the camera's forward direction
+          this.reticle.position.copy(camera.position).add(direction.multiplyScalar(0.5)); // Place it 0.5 units in front of the camera
+          this.reticle.lookAt(camera.position); // Make it face the camera (optional)
+        }
+
+
         // Update lasers and check for collisions with asteroids
         app.lasers.forEach((laser, laserIndex) => {
           // Move laser forward
