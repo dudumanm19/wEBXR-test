@@ -16,27 +16,26 @@ window.gltfLoader.load("assets/asteroid.gltf", (gltf) => {
   asteroidModel = gltf.scene;
 });
 
-/**
- * Query for WebXR support. If there's no support for the `immersive-ar` mode,
- * show an error.
- */
-(async function() {
-  const isArSessionSupported = navigator.xr && navigator.xr.isSessionSupported && await navigator.xr.isSessionSupported("immersive-ar");
-  if (isArSessionSupported) {
-    document.getElementById("enter-ar").addEventListener("click", window.app.activateXR)
+document.addEventListener("DOMContentLoaded", async () => {
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    try {
+      const isArSessionSupported = await navigator.xr.isSessionSupported("immersive-ar");
+      if (isArSessionSupported) {
+        document.getElementById("enter-ar").addEventListener("click", window.app.activateXR);
+      } else {
+        onNoXRDevice();
+      }
+    } catch (error) {
+      console.error("Error checking AR session support:", error);
+      onNoXRDevice();
+    }
   } else {
     onNoXRDevice();
   }
-})();
+});
 
-/**
- * Container class to manage connecting to the WebXR Device API
- * and handle rendering on every frame.
- */
+
 class App {
-  /**
-   * Run when the Start AR button is pressed.
-   */
   activateXR = async () => {
     try {
       // Initialize a WebXR session using "immersive-ar".
