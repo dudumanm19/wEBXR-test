@@ -1,7 +1,7 @@
 // Load the laser and explosion sounds
-const laserSound = new Audio('assets/laser.mp3');
-const explosionSound = new Audio('assets/explosion.mp3');
-const spaceSound = new Audio('assets/space_ambiance.mp3');
+const laserSound = new Audio('sounds/laser.mp3');
+const explosionSound = new Audio('sounds/explosion.mp3');
+const spaceSound = new Audio('sounds/space_ambiance.mp3');
 
 spaceSound.loop = true;  // Enable looping
 spaceSound.volume = 0.7; // Adjust volume to make it subtle
@@ -12,7 +12,7 @@ explosionSound.volume = 0.6; // Set volume to 60%
 let asteroidModel;
 
 window.gltfLoader = new THREE.GLTFLoader();
-window.gltfLoader.load("assets/asteroid.gltf", (gltf) => {
+window.gltfLoader.load("models/asteroid/scene.gltf", (gltf) => {
   asteroidModel = gltf.scene;
 });
 
