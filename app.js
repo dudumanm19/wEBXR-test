@@ -16,7 +16,7 @@ class Reticle extends THREE.Object3D {
     this.loader = new THREE.GLTFLoader();
     this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
       // Rotate the reticle model 90 degrees upwards
-      //this.rotation.x = Math.PI / 2;
+      this.rotation.z = Math.PI / 2;
 
       this.add(gltf.scene);
       console.log("Reticle loaded successfully");
@@ -73,7 +73,7 @@ function spawnAsteroid() {
   app.camera.getWorldDirection(cameraWorldDirection);
 
   // Calculate a random offset to position the asteroid around the current view
-  const spawnDistance = 10; // Distance from the camera to spawn the asteroid
+  const spawnDistance = 15; // Distance from the camera to spawn the asteroid
   const randomOffset = new THREE.Vector3(
       (Math.random() - 0.5) * 4, // Random X offset for spread
       (Math.random() - 0.5) * 4, // Random Y offset for spread
@@ -120,7 +120,7 @@ function createLaser() {
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
   // Rotate the laser so that it points forward instead of up (since cylinder geometry points along Y by default)
-  // laser.rotation.x = Math.PI / 2;
+  laser.rotation.z = Math.PI / 2;
 
   // Position the laser at the camera's current position
   const cameraWorldPosition = new THREE.Vector3();
@@ -135,7 +135,7 @@ function createLaser() {
   // Offset the laser slightly forward in the direction the camera is facing
   const cameraWorldDirection = new THREE.Vector3();
   app.camera.getWorldDirection(cameraWorldDirection);
-  laser.position.add(cameraWorldDirection.clone().multiplyScalar(0.5));
+  laser.position.add(cameraWorldDirection.clone().multiplyScalar(1));
 
   // Set the laser's velocity to move in the direction the camera is facing
   laser.userData.velocity = cameraWorldDirection.multiplyScalar(0.5); // Set speed of the laser
