@@ -4,7 +4,7 @@ const explosionSound = new Audio('sounds/explosion.mp3');
 const spaceSound = new Audio('sounds/space_ambiance.mp3');
 
 spaceSound.loop = true;  // Enable looping
-spaceSound.volume = 1.5; // Adjust volume to make it subtle
+spaceSound.volume = 1; // Adjust volume to make it subtle
 
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
