@@ -118,3 +118,7 @@ body.ar.stabilized #stabilization {
 }
 
 #wrong-hosting-root { display: none; }
+
+#enter-ar {
+  z-index: 1000; /* Make sure it's higher than any other element */
+}

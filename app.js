@@ -9,25 +9,21 @@ spaceSound.volume = 0.7; // Adjust volume to make it subtle
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
 
-let asteroidModel;
-
 window.gltfLoader = new THREE.GLTFLoader();
-gltfLoader.load("assets/asteroid.gltf", (gltf) => {
+
+let asteroidModel;
+window.gltfLoader.load("assets/asteroid.gltf", (gltf) => {
   asteroidModel = gltf.scene;
 });
 
-/**
- * Query for WebXR support. If there's no support for the `immersive-ar` mode,
- * show an error.
- */
-(async function() {
+document.addEventListener("DOMContentLoaded", () => {
   const isArSessionSupported = navigator.xr && navigator.xr.isSessionSupported && await navigator.xr.isSessionSupported("immersive-ar");
   if (isArSessionSupported) {
-    document.getElementById("enter-ar").addEventListener("click", window.app.activateXR)
+    document.getElementById("enter-ar").addEventListener("click", window.app.activateXR);
   } else {
     onNoXRDevice();
   }
-})();
+});
 
 /**
  * Container class to manage connecting to the WebXR Device API
