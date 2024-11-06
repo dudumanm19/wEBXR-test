@@ -192,11 +192,11 @@ class App {
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
     // Bind the graphics framebuffer to the baseLayer's framebuffer.
-    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer)
+    const framebuffer = this.xrSession.renderState.baseLayer.framebuffer;
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     this.renderer.setFramebuffer(framebuffer);
 
-    // Retrieve the pose of the device.
+    // Retrieve the pose of the device in relation to the AR session's local reference space.
     const pose = frame.getViewerPose(this.localReferenceSpace);
     if (pose) {
       // In mobile AR, we only have one view.
@@ -205,29 +205,33 @@ class App {
       const viewport = this.xrSession.renderState.baseLayer.getViewport(view);
       this.renderer.setSize(viewport.width, viewport.height);
 
-      // Use the view's transform matrix and projection matrix to configure the THREE.camera.
+      // Update the camera matrices
       this.camera.matrix.fromArray(view.transform.matrix);
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      // Set the reticle to always be in front of the camera
-      const distanceInFront = 1; // Set how far in front of the camera the reticle should be
-      const cameraDirection = new THREE.Vector3(0, 0, -1); // Default forward direction
+      // Position the reticle in front of the camera, always at a fixed distance
+      const distanceInFront = 1; // Distance in meters in front of the camera
+      const cameraWorldPosition = new THREE.Vector3();
+      this.camera.getWorldPosition(cameraWorldPosition);
 
-      // Apply the camera's rotation to the direction vector
-      cameraDirection.applyQuaternion(this.camera.quaternion);
+      // Get the direction the camera is facing
+      const cameraWorldDirection = new THREE.Vector3();
+      this.camera.getWorldDirection(cameraWorldDirection);
 
-      // Set the reticle position relative to the camera
-      this.reticle.position.copy(this.camera.position).add(cameraDirection.multiplyScalar(distanceInFront));
-      this.reticle.lookAt(this.camera.position); // Ensure the reticle always faces the camera
+      // Set reticle position to always be in front of the camera at a fixed distance
+      const reticlePosition = cameraWorldPosition.add(cameraWorldDirection.multiplyScalar(distanceInFront));
+      this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true; // Ensure the reticle is visible
       this.reticle.updateMatrixWorld(true);
+      this.reticle.lookAt(this.camera.position);
 
+      // Start the game logic (only runs once)
       if (!this.game_started) {
         this.game_started = true;
         document.body.classList.add('game-started');
         // Start spawning asteroids every 2 seconds
-        setInterval(spawnAsteroid, 2000);
+        // setInterval(spawnAsteroid, 2000);
         setInterval(createLaser, 200); // Fire lasers every 200 ms
       }
 
