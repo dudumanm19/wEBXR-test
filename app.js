@@ -119,6 +119,9 @@ function createLaser() {
   const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red laser color
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
+  // Rotate the laser so that it points forward instead of up (since cylinder geometry points along Y by default)
+  laser.rotation.x = Math.PI / 2;
+
   // Position the laser at the camera's current position
   const cameraWorldPosition = new THREE.Vector3();
   app.camera.getWorldPosition(cameraWorldPosition);
@@ -129,13 +132,13 @@ function createLaser() {
   app.camera.getWorldQuaternion(cameraWorldQuaternion);
   laser.quaternion.copy(cameraWorldQuaternion);
 
-  // Set the laser's velocity to move in the direction the camera is facing
+  // Offset the laser slightly forward in the direction the camera is facing
   const cameraWorldDirection = new THREE.Vector3();
   app.camera.getWorldDirection(cameraWorldDirection);
-  laser.userData.velocity = cameraWorldDirection.multiplyScalar(0.5); // Set speed of the laser
-
-  // Offset the laser slightly in front of the camera to avoid collision with the player
   laser.position.add(cameraWorldDirection.clone().multiplyScalar(0.5));
+
+  // Set the laser's velocity to move in the direction the camera is facing
+  laser.userData.velocity = cameraWorldDirection.multiplyScalar(0.5); // Set speed of the laser
 
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
@@ -145,7 +148,6 @@ function createLaser() {
   laserSound.currentTime = 0; // Reset sound to start for overlapping shots
   laserSound.play();
 }
-
 
 class App {
   activateXR = async () => {
@@ -248,11 +250,13 @@ class App {
       const cameraWorldDirection = new THREE.Vector3();
       this.camera.getWorldDirection(cameraWorldDirection);
 
-      // Set reticle position to always be in front of the camera at a fixed distance
-      const reticlePosition = cameraWorldPosition.add(cameraWorldDirection.multiplyScalar(distanceInFront));
+      // Set reticle position in front of the camera.
+      const reticlePosition = cameraWorldPosition.clone().add(cameraWorldDirection.multiplyScalar(distanceInFront));
       this.reticle.position.copy(reticlePosition);
-      this.reticle.visible = true; // Ensure the reticle is visible
-      this.reticle.lookAt(cameraWorldPosition); // Make the reticle always face the camera
+      this.reticle.visible = true;
+
+      // Make the reticle match the camera's rotation using quaternion.
+      this.reticle.quaternion.copy(this.camera.quaternion);
       this.reticle.updateMatrixWorld(true);
 
       // Start the game logic (only runs once)
