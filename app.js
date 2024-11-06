@@ -26,12 +26,15 @@ class Reticle extends THREE.Object3D {
     this.loader = new THREE.GLTFLoader();
     this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
       this.add(gltf.scene);
-    })
+      console.log("Reticle loaded successfully");
+      this.visible = false; // Make sure it's initially hidden until a hit result is detected
+    }, undefined, (error) => {
+      console.error("Error loading reticle:", error);
+    });
 
     this.visible = false;
   }
 }
-
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (navigator.xr && navigator.xr.isSessionSupported) {
@@ -50,6 +53,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     onNoXRDevice();
   }
 });
+
+function onNoXRDevice() {
+  document.body.classList.add('unsupported');
+}
+
+function spawnAsteroid() {
+  if (!asteroidModel) {
+    console.warn("Asteroid model not loaded yet.");
+    return; // Ensure the model is loaded before spawning asteroids
+  }
+
+  // Clone the loaded asteroid model to create a new instance
+  const asteroid = asteroidModel.clone();
+  asteroid.scale.set(0.5, 0.5, 0.5); // Adjust the values as needed
+
+  // Position the asteroid at a random location in front of the player
+  asteroid.position.set(
+      (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
+      (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
+      -5                             // Z position - set farther away to simulate coming forward
+  );
+
+  // Set velocity to make it move toward the player
+  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.5);
+  app.scene.add(asteroid);
+  app.asteroids.push(asteroid);
+}
+
+function handleOrientation(event) {
+  const gamma = event.gamma; // Left/right tilt in degrees
+
+  // Map gamma (-45 to 45) to the movement range (-1 to 1)
+  const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
+  app.shipXPosition = tiltAmount * 1.5; // Adjust the multiplier as needed
+
+  // Update the reticle position to reflect the movement
+  if (app.reticle) {
+    app.reticle.position.x = app.shipXPosition; // Set the reticle's X position
+    app.reticle.updateMatrixWorld(true); // Apply the change
+  }
+}
+
+function createLaser() {
+  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
+  const laserMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
+  const laser = new THREE.Mesh(laserGeometry, laserMaterial);
+
+  // Position the laser in front of the ship
+  laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
+  laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
+
+  // Set the velocity to make it move forward
+  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Adjust this value to control speed
+  app.scene.add(laser);
+  app.lasers.push(laser);
+
+  // Play laser sound
+  laserSound.currentTime = 0; // Reset to start for overlapping shots
+  laserSound.play();
+}
+
 
 
 class App {
@@ -117,7 +181,7 @@ class App {
     this.xrSession.requestAnimationFrame(this.onXRFrame);
 
     // Attach event listener for device orientation
-    this.xrSession.addEventListener("deviceorientation", handleOrientation, true);
+    window.addEventListener("deviceorientation", handleOrientation, true);
   }
 
   onXRFrame = (time, frame) => {
@@ -145,6 +209,7 @@ class App {
 
       // Perform hit test and update reticle position
       const hitTestResults = frame.getHitTestResults(this.hitTestSource);
+      console.log("Hit Test Results:", hitTestResults);
       if (hitTestResults.length > 0) {
         if (!this.stabilized) {
           this.stabilized = true;
@@ -161,6 +226,8 @@ class App {
         );
         app.reticle.visible = true;
         app.reticle.updateMatrixWorld(true);
+      } else {
+        this.reticle.visible = false; // Hide the reticle if no hit is found
       }
 
       if (this.stabilized) {
@@ -266,68 +333,8 @@ class App {
 
     const starField = new THREE.Points(starGeometry, starMaterial);
     this.scene.add(starField);
+    this.scene.add(this.reticle);
   }
 }
 
 window.app = new App();
-
-function onNoXRDevice() {
-  document.body.classList.add('unsupported');
-}
-
-
-function spawnAsteroid() {
-  if (!asteroidModel) {
-    console.warn("Asteroid model not loaded yet.");
-    return; // Ensure the model is loaded before spawning asteroids
-  }
-
-  // Clone the loaded asteroid model to create a new instance
-  const asteroid = asteroidModel.clone();
-  asteroid.scale.set(0.5, 0.5, 0.5); // Adjust the values as needed
-
-  // Position the asteroid at a random location in front of the player
-  asteroid.position.set(
-      (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
-      (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
-      -5                             // Z position - set farther away to simulate coming forward
-  );
-
-  // Set velocity to make it move toward the player
-  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.5);
-  app.scene.add(asteroid);
-  app.asteroids.push(asteroid);
-}
-
-function handleOrientation(event) {
-  const gamma = event.gamma; // Left/right tilt (in degrees)
-
-  // Map gamma (-45 to 45) to our desired movement range (-1 to 1)
-  const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
-  app.shipXPosition = tiltAmount * 1.5; // Adjust multiplier for range
-
-  // Update the reticle (or spaceship) position to reflect movement
-  if (app.reticle) {
-    app.reticle.position.x = app.shipXPosition;
-    app.reticle.updateMatrixWorld(true); // Make sure the change is applied
-  }
-}
-
-function createLaser() {
-  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-  const laserMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
-  const laser = new THREE.Mesh(laserGeometry, laserMaterial);
-
-  // Position the laser in front of the ship
-  laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
-  laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
-
-  // Set the velocity to make it move forward
-  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Adjust this value to control speed
-  app.scene.add(laser);
-  app.lasers.push(laser);
-
-  // Play laser sound
-  laserSound.currentTime = 0; // Reset to start for overlapping shots
-  laserSound.play();
-}
