@@ -25,6 +25,9 @@ class Reticle extends THREE.Object3D {
 
     this.loader = new THREE.GLTFLoader();
     this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
+      // Rotate the reticle model 90 degrees upwards
+      this.rotation.x = Math.PI / 2;
+
       this.add(gltf.scene);
       console.log("Reticle loaded successfully");
       this.visible = false; // Make sure it's initially hidden until a hit result is detected
@@ -82,16 +85,15 @@ function spawnAsteroid() {
 }
 
 function handleOrientation(event) {
-  const gamma = event.gamma; // Left/right tilt in degrees
+  const alpha = event.alpha; // Rotation around the Y-axis (0 to 360 degrees)
 
-  // Map gamma (-45 to 45) to the movement range (-1 to 1)
-  const tiltAmount = Math.max(-1, Math.min(1, gamma / 45));
-  app.shipXPosition = tiltAmount * 1.5; // Adjust the multiplier as needed
-
-  // Update the reticle position to reflect the movement
   if (app.reticle) {
-    app.reticle.position.x = app.shipXPosition; // Set the reticle's X position
-    app.reticle.updateMatrixWorld(true); // Apply the change
+    // Map the alpha value to a rotation angle for your reticle
+    const rotationRadians = THREE.MathUtils.degToRad(alpha); // Convert degrees to radians
+    app.reticle.rotation.y = rotationRadians; // Apply Y-axis rotation to the reticle
+
+    // Ensure the transformation is properly updated
+    app.reticle.updateMatrixWorld(true);
   }
 }
 
@@ -179,6 +181,7 @@ class App {
 
     // Start a rendering loop using this.onXRFrame.
     this.xrSession.requestAnimationFrame(this.onXRFrame);
+    document.body.classList.add('stabilized');
 
     // Attach event listener for device orientation
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -207,79 +210,64 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      // Perform hit test and update reticle position
-      const hitTestResults = frame.getHitTestResults(this.hitTestSource);
-      console.log("Hit Test Results:", hitTestResults);
-      if (hitTestResults.length > 0) {
-        if (!this.stabilized) {
-          this.stabilized = true;
-          document.body.classList.add('stabilized');
-        }
+      // Set the reticle to be a fixed distance in front of the camera
+      const distanceInFront = 1; // Set how far in front of the camera you want the reticle to be (in meters)
+      const cameraDirection = new THREE.Vector3(0, 0, -1); // Default direction for the camera
+      cameraDirection.applyQuaternion(this.camera.quaternion); // Rotate the direction vector by the camera's current orientation
 
-        const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
-        app.reticle.position.lerp(
-            new THREE.Vector3(
-                hitPose.transform.position.x,
-                hitPose.transform.position.y,
-                hitPose.transform.position.z
-            ), 0.2 // Adjust the value between 0 and 1 for smoothness
-        );
-        app.reticle.visible = true;
-        app.reticle.updateMatrixWorld(true);
-      } else {
-        this.reticle.visible = false; // Hide the reticle if no hit is found
+      // Set the reticle position in front of the camera
+      this.reticle.position.copy(this.camera.position).add(cameraDirection.multiplyScalar(distanceInFront));
+      this.reticle.visible = true; // Ensure the reticle is visible
+      this.reticle.updateMatrixWorld(true);
+
+      if (!this.game_started) {
+        this.game_started = true;
+        document.body.classList.add('game-started');
+        // Start spawning asteroids every 2 seconds
+        setInterval(spawnAsteroid, 2000);
+        setInterval(createLaser, 200); // Fire lasers every 200 ms
       }
 
-      if (this.stabilized) {
-        if (!this.game_started) {
-          this.game_started = true;
-          document.body.classList.add('game-started');
-          // Start spawning asteroids every 2 seconds
-          setInterval(spawnAsteroid, 2000);
-          setInterval(createLaser, 200); // Fire lasers every 200 ms
+      app.lasers.forEach((laser, laserIndex) => {
+        // Move laser forward
+        laser.position.add(laser.userData.velocity);
+
+        // Check if the laser is far enough to be removed
+        if (laser.position.z < -5) {
+          // Remove laser if it’s too far forward
+          app.scene.remove(laser);
+          app.lasers.splice(laserIndex, 1);
+          return;
         }
 
-        app.lasers.forEach((laser, laserIndex) => {
-          // Move laser forward
-          laser.position.add(laser.userData.velocity);
+        // Check for collision with asteroids
+        app.asteroids.forEach((asteroid, asteroidIndex) => {
+          // Move the asteroid toward the player by updating its position based on its velocity
+          asteroid.position.add(asteroid.userData.velocity);
 
-          // Check if the laser is far enough to be removed
-          if (laser.position.z < -5) {
-            // Remove laser if it’s too far forward
-            app.scene.remove(laser);
-            app.lasers.splice(laserIndex, 1);
-            return;
+          // Remove asteroid if it moves too far beyond the player
+          if (asteroid.position.z > 1) { // Adjust condition as needed for removal
+            app.scene.remove(asteroid);
+            app.asteroids.splice(asteroidIndex, 1);
           }
 
-          // Check for collision with asteroids
-          app.asteroids.forEach((asteroid, asteroidIndex) => {
-            // Move the asteroid toward the player by updating its position based on its velocity
-            asteroid.position.add(asteroid.userData.velocity);
+          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
+            // Collision detected, remove both laser and asteroid
+            console.log("Hit!");
+            app.score += 1;
 
-            // Remove asteroid if it moves too far beyond the player
-            if (asteroid.position.z > 1) { // Adjust condition as needed for removal
-              app.scene.remove(asteroid);
-              app.asteroids.splice(asteroidIndex, 1);
-            }
+            app.scene.remove(laser);
+            app.scene.remove(asteroid);
 
-            if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
-              // Collision detected, remove both laser and asteroid
-              console.log("Hit!");
-              app.score += 1;
+            app.lasers.splice(laserIndex, 1);
+            app.asteroids.splice(asteroidIndex, 1);
 
-              app.scene.remove(laser);
-              app.scene.remove(asteroid);
-
-              app.lasers.splice(laserIndex, 1);
-              app.asteroids.splice(asteroidIndex, 1);
-
-              // Play explosion sound
-              explosionSound.currentTime = 0; // Reset to start for overlapping explosions
-              explosionSound.play();
-            }
-          });
+            // Play explosion sound
+            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
+            explosionSound.play();
+          }
         });
-      }
+      });
 
       // Render the scene with THREE.WebGLRenderer.
       this.renderer.render(this.scene, this.camera);
@@ -305,6 +293,7 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     this.reticle = new Reticle();
+    this.reticle.scale.set(0.5, 0.5, 0.5);
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
