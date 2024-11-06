@@ -4,7 +4,7 @@ const explosionSound = new Audio('sounds/explosion.mp3');
 const spaceSound = new Audio('sounds/space_ambiance.mp3');
 
 spaceSound.loop = true;  // Enable looping
-spaceSound.volume = 1; // Adjust volume to make it subtle
+spaceSound.volume = 1.5; // Adjust volume to make it subtle
 
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
@@ -69,7 +69,7 @@ function spawnAsteroid() {
 
   // Clone the loaded asteroid model to create a new instance
   const asteroid = asteroidModel.clone();
-  asteroid.scale.set(0.1, 0.1, 0.1); // Adjust size as needed
+  asteroid.scale.set(0.25, 0.25, 0.25); // Adjust size as needed
 
   // Get the current camera position and direction
   const cameraWorldPosition = new THREE.Vector3();
@@ -252,7 +252,6 @@ class App {
       this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true; // Ensure the reticle is visible
       this.reticle.updateMatrixWorld(true);
-      this.reticle.lookAt(this.camera.position);
 
       // Start the game logic (only runs once)
       if (!this.game_started) {
@@ -262,6 +261,18 @@ class App {
         setInterval(spawnAsteroid, 2000);
         setInterval(createLaser, 200); // Fire lasers every 200 ms
       }
+
+      app.asteroids.forEach((asteroid, asteroidIndex) => {
+        // Move asteroid towards the player using the velocity
+        asteroid.position.add(asteroid.userData.velocity);
+
+        // Remove the asteroid if it moves too far past the player
+        if (asteroid.position.distanceTo(app.camera.position) < 0.5) {
+          console.log("Asteroid reached the player!");
+          app.scene.remove(asteroid);
+          app.asteroids.splice(asteroidIndex, 1);
+        }
+      });
 
       app.lasers.forEach((laser, laserIndex) => {
         // Move the laser in the direction of its velocity
@@ -293,8 +304,8 @@ class App {
         });
       });
 
-      // Render the scene with THREE.WebGLRenderer.
-      this.renderer.render(this.scene, this.camera);
+      // Render the scene using the composer to add bloom effects
+      this.composer.render();
     }
 
     // Update score display
@@ -315,13 +326,14 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     this.reticle = new Reticle();
-    this.reticle.scale.set(0.4, 0.4, 0.4);
+    this.reticle.scale.set(0.25, 0.25, 0.25);
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
     // to handle the matrices independently.
     this.camera = new THREE.PerspectiveCamera();
     this.camera.matrixAutoUpdate = false;
+
 
     // Create a star field using particles
     const starCount = 1000; // Number of stars
@@ -337,14 +349,30 @@ class App {
     starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 
     const starMaterial = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.7, // Size of each star point
-      sizeAttenuation: true,
+      color: 0xffffff, // Base color of the star
+      emissive: 0xffffff, // Glow color
+      emissiveIntensity: 1.5, // Intensity of the glow
+      roughness: 0.5,
+      metalness: 0
     });
 
     const starField = new THREE.Points(starGeometry, starMaterial);
     this.scene.add(starField);
     this.scene.add(this.reticle);
+
+
+    // Post-processing setup
+    this.composer = new THREE.EffectComposer(this.renderer);
+    const renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.composer.addPass(renderPass);
+
+    const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        1.5,  // strength of bloom
+        0.4,  // radius of bloom
+        0.85  // threshold of bloom
+    );
+    this.composer.addPass(bloomPass);
   }
 }
 
