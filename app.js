@@ -210,13 +210,16 @@ class App {
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      // Set the reticle to be a fixed distance in front of the camera
-      const distanceInFront = 1; // Set how far in front of the camera you want the reticle to be (in meters)
-      const cameraDirection = new THREE.Vector3(0, 0, -1); // Default direction for the camera
-      cameraDirection.applyQuaternion(this.camera.quaternion); // Rotate the direction vector by the camera's current orientation
+      // Set the reticle to always be in front of the camera
+      const distanceInFront = 1; // Set how far in front of the camera the reticle should be
+      const cameraDirection = new THREE.Vector3(0, 0, -1); // Default forward direction
 
-      // Set the reticle position in front of the camera
+      // Apply the camera's rotation to the direction vector
+      cameraDirection.applyQuaternion(this.camera.quaternion);
+
+      // Set the reticle position relative to the camera
       this.reticle.position.copy(this.camera.position).add(cameraDirection.multiplyScalar(distanceInFront));
+      this.reticle.lookAt(this.camera.position); // Ensure the reticle always faces the camera
       this.reticle.visible = true; // Ensure the reticle is visible
       this.reticle.updateMatrixWorld(true);
 
@@ -293,7 +296,7 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     this.reticle = new Reticle();
-    this.reticle.scale.set(0.5, 0.5, 0.5);
+    this.reticle.scale.set(0.2, 0.2, 0.2);
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
