@@ -4,7 +4,7 @@ const explosionSound = new Audio('sounds/explosion.mp3');
 const spaceSound = new Audio('sounds/space_ambiance.mp3');
 
 spaceSound.loop = true;  // Enable looping
-spaceSound.volume = 0.7; // Adjust volume to make it subtle
+spaceSound.volume = 1; // Adjust volume to make it subtle
 
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
@@ -63,8 +63,6 @@ class App {
 
       // Create the canvas that will contain our camera's background and our virtual scene.
       this.createXRCanvas();
-      this.stabilized = false;
-      this.game_started = false;
       // With everything set up, start the app.
       await this.onSessionStarted();
     } catch(e) {
@@ -148,8 +146,12 @@ class App {
       // Perform hit test and update reticle position
       const hitTestResults = frame.getHitTestResults(this.hitTestSource);
       if (hitTestResults.length > 0) {
+        if (!this.stabilized) {
+          this.stabilized = true;
+          document.body.classList.add('stabilized');
+        }
+
         const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
-        this.stabilized = true;
         app.reticle.position.lerp(
             new THREE.Vector3(
                 hitPose.transform.position.x,
