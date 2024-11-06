@@ -15,8 +15,8 @@ class Reticle extends THREE.Object3D {
 
     this.loader = new THREE.GLTFLoader();
     this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
-      // Rotate the reticle model 90 degrees upwards
-      this.rotation.z = Math.PI / 2;
+      // Rotate the reticle so that it is facing the Z-axis (forward direction)
+      this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
 
       this.add(gltf.scene);
       console.log("Reticle loaded successfully");
@@ -119,8 +119,8 @@ function createLaser() {
   const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red laser color
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
-  // Rotate the laser so that it points forward instead of up (since cylinder geometry points along Y by default)
-  laser.rotation.z = Math.PI / 2;
+  // Rotate the laser geometry so that it points along the Z-axis (forward direction)
+  laserGeometry.rotateX(Math.PI / 2);
 
   // Position the laser at the camera's current position
   const cameraWorldPosition = new THREE.Vector3();
@@ -138,7 +138,7 @@ function createLaser() {
   laser.position.add(cameraWorldDirection.clone().multiplyScalar(1));
 
   // Set the laser's velocity to move in the direction the camera is facing
-  laser.userData.velocity = cameraWorldDirection.multiplyScalar(0.5); // Set speed of the laser
+  laser.userData.velocity = cameraWorldDirection.clone().multiplyScalar(0.5); // Set speed of the laser
 
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
@@ -233,20 +233,20 @@ class App {
       // In mobile AR, we only have one view.
       const view = pose.views[0];
 
+      // Set up the viewport.
       const viewport = this.xrSession.renderState.baseLayer.getViewport(view);
       this.renderer.setSize(viewport.width, viewport.height);
 
-      // Update the camera matrices
+      // Update the camera matrices.
       this.camera.matrix.fromArray(view.transform.matrix);
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
-      // Position the reticle in front of the camera, always at a fixed distance
-      const distanceInFront = 1; // Distance in meters in front of the camera
+      // Position the reticle in front of the camera, always at a fixed distance.
+      const distanceInFront = 1; // Distance in meters in front of the camera.
       const cameraWorldPosition = new THREE.Vector3();
       this.camera.getWorldPosition(cameraWorldPosition);
 
-      // Get the direction the camera is facing
       const cameraWorldDirection = new THREE.Vector3();
       this.camera.getWorldDirection(cameraWorldDirection);
 
@@ -255,8 +255,8 @@ class App {
       this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true;
 
-      // Make the reticle match the camera's rotation using quaternion.
-      this.reticle.quaternion.copy(this.camera.quaternion);
+      // Make the reticle always face the camera.
+      this.reticle.lookAt(cameraWorldPosition);
       this.reticle.updateMatrixWorld(true);
 
       // Start the game logic (only runs once)
