@@ -9,26 +9,6 @@ spaceSound.volume = 0.9; // Adjust volume to make it subtle
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
 
-class Reticle extends THREE.Object3D {
-  constructor() {
-    super();
-
-    this.loader = new THREE.GLTFLoader();
-    this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
-      // Rotate the reticle so that it is facing the Z-axis (forward direction)
-      this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
-
-      this.add(gltf.scene);
-      console.log("Reticle loaded successfully");
-      this.visible = false; // Make sure it's initially hidden until a hit result is detected
-    }, undefined, (error) => {
-      console.error("Error loading reticle:", error);
-    });
-
-    this.visible = false;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   if (navigator.xr && navigator.xr.isSessionSupported) {
     try {
@@ -115,14 +95,14 @@ function handleOrientation(event) {
 
 function createLaser() {
   // Create laser geometry and material
-  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.25, 8); // Small cylinder for laser beam
+  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8); // Small cylinder for laser beam
   const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red laser color
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
   // Rotate the laser geometry so that it points along the Z-axis (forward direction)
   laserGeometry.rotateX(Math.PI / 2);
 
-  // Position the laser at the camera's current position
+  // Set the initial position of the laser at the camera's position
   const cameraWorldPosition = new THREE.Vector3();
   app.camera.getWorldPosition(cameraWorldPosition);
   laser.position.copy(cameraWorldPosition);
@@ -132,15 +112,13 @@ function createLaser() {
   app.camera.getWorldQuaternion(cameraWorldQuaternion);
   laser.quaternion.copy(cameraWorldQuaternion);
 
-  // Offset the laser slightly forward in the direction the camera is facing
+  // Offset the laser slightly in front of the camera to avoid collision with the player
   const cameraWorldDirection = new THREE.Vector3();
   app.camera.getWorldDirection(cameraWorldDirection);
-  laser.position.add(cameraWorldDirection.clone().multiplyScalar(1));
+  laser.position.add(cameraWorldDirection.clone().multiplyScalar(0.5));
 
   // Set the laser's velocity to move in the direction the camera is facing
-  laser.userData.velocity = cameraWorldDirection.clone().multiplyScalar(0.5); // Set speed of the laser
-
-  this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
+  laser.userData.velocity = cameraWorldDirection.clone().multiplyScalar(0.5); // Adjust speed of the laser
 
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
@@ -253,15 +231,14 @@ class App {
       this.camera.getWorldDirection(cameraWorldDirection);
 
       // Set reticle position in front of the camera.
-      const reticlePosition = cameraWorldPosition.clone().add(cameraWorldDirection.multiplyScalar(distanceInFront));
+      const reticlePosition = cameraWorldPosition.clone()
+          .add(cameraWorldDirection.multiplyScalar(distanceInFront));
       this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true;
 
-      // Make the reticle always face the camera.
-      this.reticle.lookAt(cameraWorldPosition);
+      // Align the reticle orientation with the camera using quaternion
+      this.reticle.quaternion.copy(this.camera.quaternion);
       this.reticle.updateMatrixWorld(true);
-
-      this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
 
       // Start the game logic (only runs once)
       if (!this.game_started) {
@@ -346,8 +323,24 @@ class App {
 
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
-    this.reticle = new Reticle();
-    this.reticle.scale.set(0.25, 0.25, 0.25);
+    // Create reticle geometry and material
+    const reticleGeometry = new THREE.PlaneGeometry(0.2, 0.2); // Width and height of the reticle
+    const reticleMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    // Create the reticle mesh
+    this.reticle = new THREE.Mesh(reticleGeometry, reticleMaterial);
+
+    // Rotate the reticle so that it is facing the camera's forward direction
+    this.reticle.rotation.x = -Math.PI / 2;
+
+    // Add the reticle to the scene and set it to invisible initially
+    this.scene.add(this.reticle);
+    this.reticle.visible = false;
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
