@@ -304,8 +304,8 @@ class App {
         });
       });
 
-      // Render the scene using the composer to add bloom effects
-      this.composer.render();
+      // Render the scene with THREE.WebGLRenderer.
+      this.renderer.render(this.scene, this.camera);
     }
 
     // Update score display
@@ -359,20 +359,6 @@ class App {
     const starField = new THREE.Points(starGeometry, starMaterial);
     this.scene.add(starField);
     this.scene.add(this.reticle);
-
-
-    // Post-processing setup
-    this.composer = new THREE.EffectComposer(this.renderer);
-    const renderPass = new THREE.RenderPass(this.scene, this.camera);
-    this.composer.addPass(renderPass);
-
-    const bloomPass = new THREE.UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.5,  // strength of bloom
-        0.4,  // radius of bloom
-        0.85  // threshold of bloom
-    );
-    this.composer.addPass(bloomPass);
   }
 }
 
