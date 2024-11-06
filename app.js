@@ -69,7 +69,7 @@ function spawnAsteroid() {
 
   // Clone the loaded asteroid model to create a new instance
   const asteroid = asteroidModel.clone();
-  asteroid.scale.set(0.25, 0.25, 0.25); // Adjust size as needed
+  asteroid.scale.set(0.1, 0.1, 0.1); // Adjust size as needed
 
   // Get the current camera position and direction
   const cameraWorldPosition = new THREE.Vector3();
@@ -134,6 +134,7 @@ function createLaser() {
   const cameraDirection = new THREE.Vector3();
   app.camera.getWorldDirection(cameraDirection);
   laser.userData.velocity = cameraDirection.multiplyScalar(0.5); // Set speed of the laser
+  laser.rotation.x = Math.PI / 2;
 
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
@@ -143,7 +144,6 @@ function createLaser() {
   laserSound.currentTime = 0; // Reset sound to start for overlapping shots
   laserSound.play();
 }
-
 
 
 class App {
@@ -251,6 +251,7 @@ class App {
       const reticlePosition = cameraWorldPosition.add(cameraWorldDirection.multiplyScalar(distanceInFront));
       this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true; // Ensure the reticle is visible
+      this.reticle.lookAt(cameraWorldPosition); // Make the reticle always face the camera
       this.reticle.updateMatrixWorld(true);
 
       // Start the game logic (only runs once)
@@ -287,21 +288,31 @@ class App {
         }
 
         // Check for collisions with asteroids
+        let asteroidHitIndex = null;
         app.asteroids.forEach((asteroid, asteroidIndex) => {
-          if (laser.position.distanceTo(asteroid.position) < 0.15) {
+          if (laser.position.distanceTo(asteroid.position) < 0.3) {
             console.log("Hit!");
             app.score += 1;
 
+            // Mark asteroid for removal
+            asteroidHitIndex = asteroidIndex;
+
+            // Remove laser immediately
             app.scene.remove(laser);
-            app.scene.remove(asteroid);
-
             app.lasers.splice(laserIndex, 1);
-            app.asteroids.splice(asteroidIndex, 1);
 
-            explosionSound.currentTime = 0; // Reset explosion sound for overlapping explosions
+            // Play explosion sound
+            explosionSound.currentTime = 0;
             explosionSound.play();
           }
         });
+
+        // If an asteroid was hit, remove it
+        if (asteroidHitIndex !== null) {
+          const asteroid = app.asteroids[asteroidHitIndex];
+          app.scene.remove(asteroid);
+          app.asteroids.splice(asteroidHitIndex, 1);
+        }
       });
 
       // Render the scene with THREE.WebGLRenderer.
