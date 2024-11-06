@@ -140,6 +140,8 @@ function createLaser() {
   // Set the laser's velocity to move in the direction the camera is facing
   laser.userData.velocity = cameraWorldDirection.clone().multiplyScalar(0.5); // Set speed of the laser
 
+  this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
+
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
   app.lasers.push(laser);
@@ -258,6 +260,8 @@ class App {
       // Make the reticle always face the camera.
       this.reticle.lookAt(cameraWorldPosition);
       this.reticle.updateMatrixWorld(true);
+
+      this.reticle.rotation.x = -Math.PI / 2; // Rotate from horizontal to vertical
 
       // Start the game logic (only runs once)
       if (!this.game_started) {
