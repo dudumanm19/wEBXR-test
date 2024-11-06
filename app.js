@@ -69,17 +69,36 @@ function spawnAsteroid() {
 
   // Clone the loaded asteroid model to create a new instance
   const asteroid = asteroidModel.clone();
-  asteroid.scale.set(0.5, 0.5, 0.5); // Adjust the values as needed
+  asteroid.scale.set(0.1, 0.1, 0.1); // Adjust size as needed
 
-  // Position the asteroid at a random location in front of the player
-  asteroid.position.set(
-      (Math.random() - 0.5) * 1.5,  // X position - a bit spread out horizontally
-      (Math.random() - 0.5) * 0.5,  // Y position - spread slightly vertically
-      -5                             // Z position - set farther away to simulate coming forward
+  // Get the current camera position and direction
+  const cameraWorldPosition = new THREE.Vector3();
+  app.camera.getWorldPosition(cameraWorldPosition);
+
+  const cameraWorldDirection = new THREE.Vector3();
+  app.camera.getWorldDirection(cameraWorldDirection);
+
+  // Calculate a random offset to position the asteroid around the current view
+  const spawnDistance = 10; // Distance from the camera to spawn the asteroid
+  const randomOffset = new THREE.Vector3(
+      (Math.random() - 0.5) * 4, // Random X offset for spread
+      (Math.random() - 0.5) * 4, // Random Y offset for spread
+      (Math.random() - 0.5) * 2  // Random Z offset for slight depth variation
   );
 
-  // Set velocity to make it move toward the player
-  asteroid.userData.velocity = new THREE.Vector3(0, 0, 0.5);
+  // Calculate asteroid spawn position
+  const asteroidPosition = cameraWorldPosition.clone()
+      .add(cameraWorldDirection.multiplyScalar(spawnDistance)) // Place asteroid in front of the camera
+      .add(randomOffset); // Apply some randomness around that direction
+
+  // Set asteroid's position
+  asteroid.position.copy(asteroidPosition);
+
+  // Set velocity to make it move towards the player
+  const velocityDirection = new THREE.Vector3().subVectors(cameraWorldPosition, asteroid.position).normalize();
+  asteroid.userData.velocity = velocityDirection.multiplyScalar(0.05); // Adjust speed of asteroids
+
+  // Add the asteroid to the scene
   app.scene.add(asteroid);
   app.asteroids.push(asteroid);
 }
@@ -98,21 +117,30 @@ function handleOrientation(event) {
 }
 
 function createLaser() {
+  // Create laser geometry and material
   const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-  const laserMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
+  const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
-  // Position the laser in front of the ship
-  laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
-  laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
+  // Position the laser in front of the camera
+  const cameraWorldPosition = new THREE.Vector3();
+  app.camera.getWorldPosition(cameraWorldPosition);
+  laser.position.copy(cameraWorldPosition);
 
-  // Set the velocity to make it move forward
-  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Adjust this value to control speed
+  // Rotate the laser to face the direction of the camera
+  laser.quaternion.copy(app.camera.quaternion);
+
+  // Set the laser's velocity to move in the direction the camera is facing
+  const cameraDirection = new THREE.Vector3();
+  app.camera.getWorldDirection(cameraDirection);
+  laser.userData.velocity = cameraDirection.multiplyScalar(0.5); // Set speed of the laser
+
+  // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
   app.lasers.push(laser);
 
-  // Play laser sound
-  laserSound.currentTime = 0; // Reset to start for overlapping shots
+  // Play the laser firing sound
+  laserSound.currentTime = 0; // Reset sound to start for overlapping shots
   laserSound.play();
 }
 
@@ -231,35 +259,25 @@ class App {
         this.game_started = true;
         document.body.classList.add('game-started');
         // Start spawning asteroids every 2 seconds
-        // setInterval(spawnAsteroid, 2000);
+        setInterval(spawnAsteroid, 2000);
         setInterval(createLaser, 200); // Fire lasers every 200 ms
       }
 
       app.lasers.forEach((laser, laserIndex) => {
-        // Move laser forward
+        // Move the laser in the direction of its velocity
         laser.position.add(laser.userData.velocity);
 
-        // Check if the laser is far enough to be removed
-        if (laser.position.z < -5) {
-          // Remove laser if it’s too far forward
+        // Remove the laser if it moves too far from the camera
+        const distanceFromCamera = laser.position.distanceTo(app.camera.position);
+        if (distanceFromCamera > 20) { // Adjust distance threshold as needed
           app.scene.remove(laser);
           app.lasers.splice(laserIndex, 1);
           return;
         }
 
-        // Check for collision with asteroids
+        // Check for collisions with asteroids
         app.asteroids.forEach((asteroid, asteroidIndex) => {
-          // Move the asteroid toward the player by updating its position based on its velocity
-          asteroid.position.add(asteroid.userData.velocity);
-
-          // Remove asteroid if it moves too far beyond the player
-          if (asteroid.position.z > 1) { // Adjust condition as needed for removal
-            app.scene.remove(asteroid);
-            app.asteroids.splice(asteroidIndex, 1);
-          }
-
-          if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
-            // Collision detected, remove both laser and asteroid
+          if (laser.position.distanceTo(asteroid.position) < 0.15) {
             console.log("Hit!");
             app.score += 1;
 
@@ -269,8 +287,7 @@ class App {
             app.lasers.splice(laserIndex, 1);
             app.asteroids.splice(asteroidIndex, 1);
 
-            // Play explosion sound
-            explosionSound.currentTime = 0; // Reset to start for overlapping explosions
+            explosionSound.currentTime = 0; // Reset explosion sound for overlapping explosions
             explosionSound.play();
           }
         });
@@ -285,8 +302,6 @@ class App {
   };
 
   setupThreeJs() {
-    // To help with working with 3D on the web, we'll use three.js.
-    // Set up the WebGLRenderer, which handles rendering to our session's base layer.
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
       preserveDrawingBuffer: true,
@@ -300,7 +315,7 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     this.reticle = new Reticle();
-    this.reticle.scale.set(0.2, 0.2, 0.2);
+    this.reticle.scale.set(0.4, 0.4, 0.4);
 
     // We'll update the camera matrices directly from API, so
     // disable matrix auto updates so three.js doesn't attempt
