@@ -1,80 +1,167 @@
 {
   "accessors": [
     {
-      "bufferView": 1,
+      "bufferView": 2,
       "componentType": 5126,
-      "count": 22306,
+      "count": 15854,
       "max": [
-        1.0439234972000122,
-        1.0582504272460938,
-        1.0400248765945435
+        8.517659187316895,
+        8.259503364562988,
+        8.500486373901367
       ],
       "min": [
-        -1.0667530298233032,
-        -1.065708041191101,
-        -1.0763453245162964
+        -8.342425346374512,
+        -8.25008487701416,
+        -8.481919288635254
       ],
       "type": "VEC3"
     },
     {
-      "bufferView": 1,
-      "byteOffset": 267672,
+      "bufferView": 2,
+      "byteOffset": 190248,
       "componentType": 5126,
-      "count": 22306,
+      "count": 15854,
+      "max": [
+        1.0,
+        0.9997807145118713,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -0.9997807145118713,
+        -1.0
+      ],
       "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 15854,
+      "max": [
+        0.9999983906745911,
+        1.0,
+        0.012915343046188354,
+        1.0
+      ],
+      "min": [
+        -0.9999858140945435,
+        -1.0,
+        -0.011126366443932056,
+        -1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 15854,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
     },
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 133824,
+      "count": 93150,
       "type": "SCALAR"
     }
   ],
   "asset": {
-    "generator": "fab-model-conversion",
+    "extras": {
+      "author": "Brandon Westlake (https://sketchfab.com/dr.badass2142)",
+      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
+      "source": "https://sketchfab.com/3d-models/large-asteroid-small-moon-free-97e836948dd14a5ba4ed69ff8d0d0831",
+      "title": "Large Asteroid / Small Moon (FREE)"
+    },
+    "generator": "Sketchfab-15.50.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 535296,
+      "byteLength": 372600,
+      "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 535344,
-      "byteOffset": 535296,
+      "byteLength": 126832,
+      "byteOffset": 372600,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 380496,
+      "byteOffset": 499432,
       "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 253664,
+      "byteOffset": 879928,
+      "byteStride": 16,
+      "name": "floatBufferViews",
       "target": 34962
     }
   ],
   "buffers": [
     {
-      "byteLength": 1070640,
+      "byteLength": 1133592,
       "uri": "scene.bin"
     }
   ],
   "extensionsUsed": [
     "KHR_materials_specular"
   ],
+  "images": [
+    {
+      "uri": "textures/PlanetMat_baseColor.png"
+    },
+    {
+      "uri": "textures/PlanetMat_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/PlanetMat_normal.png"
+    }
+  ],
   "materials": [
     {
       "doubleSided": true,
       "extensions": {
         "KHR_materials_specular": {
-          "specularFactor": 0.36511058596194934
+          "specularColorFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "specularFactor": 0.3289141106
         }
       },
-      "name": "Scene_-_Root",
+      "name": "PlanetMat",
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 1
+      },
       "pbrMetallicRoughness": {
-        "baseColorFactor": [
-          0.08812187368157884,
-          0.08812187368157884,
-          0.08812187368157884,
-          1.0
-        ],
+        "baseColorTexture": {
+          "index": 0
+        },
         "metallicFactor": 0.0,
-        "roughnessFactor": 0.9241703932078505
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
       }
     }
   ],
@@ -85,9 +172,11 @@
         {
           "attributes": {
             "NORMAL": 1,
-            "POSITION": 0
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3
           },
-          "indices": 2,
+          "indices": 4,
           "material": 0,
           "mode": 4
         }
@@ -123,41 +212,19 @@
       "children": [
         2
       ],
-      "name": "root"
-    },
-    {
-      "children": [
-        3
-      ],
-      "matrix": [
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        2.220446049250313e-16,
-        1.0,
-        0.0,
-        0.0,
-        -1.0,
-        2.220446049250313e-16,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "GLTF_SceneRootNode"
-    },
-    {
-      "children": [
-        4
-      ],
-      "name": "Icosphere_0"
+      "name": "Test_planet.obj.cleaner.materialmerger.gles"
     },
     {
       "mesh": 0,
-      "name": "Object_4"
+      "name": "Object_2"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
     }
   ],
   "scene": 0,
@@ -167,6 +234,20 @@
       "nodes": [
         0
       ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
     }
   ]
 }

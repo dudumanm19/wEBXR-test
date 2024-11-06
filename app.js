@@ -47,10 +47,8 @@ class App {
 
       // Create the canvas that will contain our camera's background and our virtual scene.
       this.createXRCanvas();
-
-      document.body.classList.add('game-started');
-      this.game_started = false;
       this.stabilized = false;
+      this.game_started = false;
       // With everything set up, start the app.
       await this.onSessionStarted();
     } catch(e) {
@@ -108,10 +106,6 @@ class App {
     this.xrSession.addEventListener("deviceorientation", handleOrientation, true);
   }
 
-  /**
-   * Called on the XRSession's requestAnimationFrame.
-   * Called with the time and XRPresentationFrame.
-   */
   onXRFrame = (time, frame) => {
     // Queue up the next draw request.
     this.xrSession.requestAnimationFrame(this.onXRFrame);
@@ -122,44 +116,44 @@ class App {
     this.renderer.setFramebuffer(framebuffer);
 
     // Retrieve the pose of the device.
-    // XRFrame.getViewerPose can return null while the session attempts to establish tracking.
     const pose = frame.getViewerPose(this.localReferenceSpace);
     if (pose) {
       // In mobile AR, we only have one view.
       const view = pose.views[0];
 
       const viewport = this.xrSession.renderState.baseLayer.getViewport(view);
-      this.renderer.setSize(viewport.width, viewport.height)
+      this.renderer.setSize(viewport.width, viewport.height);
 
       // Use the view's transform matrix and projection matrix to configure the THREE.camera.
-      this.camera.matrix.fromArray(view.transform.matrix)
+      this.camera.matrix.fromArray(view.transform.matrix);
       this.camera.projectionMatrix.fromArray(view.projectionMatrix);
       this.camera.updateMatrixWorld(true);
 
+      // Perform hit test and update reticle position
       const hitTestResults = frame.getHitTestResults(this.hitTestSource);
-      // If we have results, consider the environment stabilized.
-      if (!this.stabilized && hitTestResults.length > 0) {
-        this.stabilized = true;
-        if (!this.game_started) {
-          this.game_started = true;
-          // Fire lasers every 200 milliseconds
-          setInterval(createLaser, 200);
-          // Start spawning obstacles every 2 seconds
-          setInterval(spawnAsteroid, 2000);
-        }
-        document.body.classList.add('stabilized');
-      }
-
       if (hitTestResults.length > 0) {
         const hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
-        // Update the reticle position
+        this.stabilized = true;
+        app.reticle.position.lerp(
+            new THREE.Vector3(
+                hitPose.transform.position.x,
+                hitPose.transform.position.y,
+                hitPose.transform.position.z
+            ), 0.2 // Adjust the value between 0 and 1 for smoothness
+        );
         app.reticle.visible = true;
-        app.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
         app.reticle.updateMatrixWorld(true);
       }
 
       if (this.stabilized) {
-        // Update lasers and check for collisions with asteroids
+        if (!this.game_started) {
+          this.game_started = true;
+          document.body.classList.add('game-started');
+          // Start spawning asteroids every 2 seconds
+          setInterval(spawnAsteroid, 2000);
+          setInterval(createLaser, 200); // Fire lasers every 200 ms
+        }
+
         app.lasers.forEach((laser, laserIndex) => {
           // Move laser forward
           laser.position.add(laser.userData.velocity);
@@ -174,6 +168,15 @@ class App {
 
           // Check for collision with asteroids
           app.asteroids.forEach((asteroid, asteroidIndex) => {
+            // Move the asteroid toward the player by updating its position based on its velocity
+            asteroid.position.add(asteroid.userData.velocity);
+
+            // Remove asteroid if it moves too far beyond the player
+            if (asteroid.position.z > 1) { // Adjust condition as needed for removal
+              app.scene.remove(asteroid);
+              app.asteroids.splice(asteroidIndex, 1);
+            }
+
             if (laser.position.distanceTo(asteroid.position) < 0.15) { // Adjust distance for collision accuracy
               // Collision detected, remove both laser and asteroid
               console.log("Hit!");
@@ -199,12 +202,8 @@ class App {
 
     // Update score display
     document.getElementById("score-value").textContent = app.score;
-  }
+  };
 
-  /**
-   * Initialize three.js specific rendering code, including a WebGLRenderer,
-   * a demo scene, and a camera for viewing the 3D content.
-   */
   setupThreeJs() {
     // To help with working with 3D on the web, we'll use three.js.
     // Set up the WebGLRenderer, which handles rendering to our session's base layer.
@@ -228,12 +227,27 @@ class App {
     this.camera = new THREE.PerspectiveCamera();
     this.camera.matrixAutoUpdate = false;
 
-    const spaceTexture = new THREE.TextureLoader().load('assets/space_texture.png');
-    const spaceGeometry = new THREE.SphereGeometry(100, 64, 64);
-    const spaceMaterial = new THREE.MeshBasicMaterial({ map: spaceTexture, side: THREE.BackSide });
-    const spaceBackground = new THREE.Mesh(spaceGeometry, spaceMaterial);
+    // Create a star field using particles
+    const starCount = 1000; // Number of stars
+    const positions = [];
+    for (let i = 0; i < starCount; i++) {
+      const x = (Math.random() - 0.5) * 200; // Spread out over a large area
+      const y = (Math.random() - 0.5) * 200;
+      const z = (Math.random() - 0.5) * 200;
+      positions.push(x, y, z);
+    }
 
-    this.scene.add(spaceBackground);
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.7, // Size of each star point
+      sizeAttenuation: true,
+    });
+
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    this.scene.add(starField);
   }
 }
 
@@ -245,10 +259,14 @@ function onNoXRDevice() {
 
 
 function spawnAsteroid() {
-  //const asteroid = asteroidModel.clone();
-  const geometry = new THREE.SphereGeometry(0.1, 32, 32); // Adjust size as needed
-  const material = new THREE.MeshBasicMaterial({ color: 0x666666 });
-  const asteroid = new THREE.Mesh(geometry, material);
+  if (!asteroidModel) {
+    console.warn("Asteroid model not loaded yet.");
+    return; // Ensure the model is loaded before spawning asteroids
+  }
+
+  // Clone the loaded asteroid model to create a new instance
+  const asteroid = asteroidModel.clone();
+  asteroid.scale.set(0.5, 0.5, 0.5); // Adjust the values as needed
 
   // Position the asteroid at a random location in front of the player
   asteroid.position.set(
@@ -271,8 +289,9 @@ function handleOrientation(event) {
   app.shipXPosition = tiltAmount * 1.5; // Adjust multiplier for range
 
   // Update the reticle (or spaceship) position to reflect movement
-  if (this.reticle) {
+  if (app.reticle) {
     app.reticle.position.x = app.shipXPosition;
+    app.reticle.updateMatrixWorld(true); // Make sure the change is applied
   }
 }
 
@@ -285,7 +304,8 @@ function createLaser() {
   laser.position.set(app.reticle.position.x, app.reticle.position.y, app.reticle.position.z - 0.5);
   laser.rotation.x = Math.PI / 2; // Rotate so it faces forward
 
-  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Laser speed moving forward
+  // Set the velocity to make it move forward
+  laser.userData.velocity = new THREE.Vector3(0, 0, -0.1); // Adjust this value to control speed
   app.scene.add(laser);
   app.lasers.push(laser);
 

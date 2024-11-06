@@ -17,6 +17,11 @@ class Reticle extends THREE.Object3D {
   }
 }
 
+let asteroidModel;
+gltfLoader.load("assets/asteroid.gltf", (gltf) => {
+  asteroidModel = gltf.scene;
+});
+
 
 window.Scenes = {
   /**
