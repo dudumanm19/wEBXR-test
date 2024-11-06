@@ -9,16 +9,6 @@ spaceSound.volume = 0.9; // Adjust volume to make it subtle
 laserSound.volume = 0.4; // Set volume to 40%
 explosionSound.volume = 0.6; // Set volume to 60%
 
-let asteroidModel;
-
-window.gltfLoader = new THREE.GLTFLoader();
-window.gltfLoader.load("models/asteroid/scene.gltf", (gltf) => {
-  asteroidModel = gltf.scene;
-  console.log("Asteroid model loaded successfully");
-}, undefined, (error) => {
-  console.error("Error loading the GLTF model:", error);
-});
-
 class Reticle extends THREE.Object3D {
   constructor() {
     super();
@@ -62,14 +52,18 @@ function onNoXRDevice() {
 }
 
 function spawnAsteroid() {
-  if (!asteroidModel) {
-    console.warn("Asteroid model not loaded yet.");
-    return; // Ensure the model is loaded before spawning asteroids
-  }
+  // Create asteroid geometry and material
+  const asteroidGeometry = new THREE.IcosahedronGeometry(0.5, 1); // Radius of 0.5 and detail level of 1
+  const textureLoader = new THREE.TextureLoader();
+  const asteroidTexture = textureLoader.load('assets/asteroid_texture.jpg');
+  const asteroidMaterial = new THREE.MeshStandardMaterial({
+    map: asteroidTexture,
+    roughness: 1,
+    metalness: 0.1
+  });
 
-  // Clone the loaded asteroid model to create a new instance
-  const asteroid = asteroidModel.clone();
-  asteroid.scale.set(0.1, 0.1, 0.1); // Adjust size as needed
+  // Create the asteroid mesh
+  const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
 
   // Get the current camera position and direction
   const cameraWorldPosition = new THREE.Vector3();
@@ -85,6 +79,9 @@ function spawnAsteroid() {
       (Math.random() - 0.5) * 4, // Random Y offset for spread
       (Math.random() - 0.5) * 2  // Random Z offset for slight depth variation
   );
+
+  const randomScale = 0.3 + Math.random() * 0.5; // Random size between 0.3 and 0.8
+  asteroid.scale.set(randomScale, randomScale, randomScale);
 
   // Calculate asteroid spawn position
   const asteroidPosition = cameraWorldPosition.clone()
@@ -368,6 +365,14 @@ class App {
     });
 
     const starField = new THREE.Points(starGeometry, starMaterial);
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft white ambient light
+    app.scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 7.5);
+    app.scene.add(directionalLight);
+
     this.scene.add(starField);
     this.scene.add(this.reticle);
   }
