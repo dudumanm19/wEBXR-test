@@ -115,23 +115,27 @@ function handleOrientation(event) {
 
 function createLaser() {
   // Create laser geometry and material
-  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8);
-  const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.25, 8); // Small cylinder for laser beam
+  const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red laser color
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
-  // Position the laser in front of the camera
+  // Position the laser at the camera's current position
   const cameraWorldPosition = new THREE.Vector3();
   app.camera.getWorldPosition(cameraWorldPosition);
   laser.position.copy(cameraWorldPosition);
 
-  // Rotate the laser to face the direction of the camera
-  laser.quaternion.copy(app.camera.quaternion);
+  // Align the laser's orientation to match the camera's direction
+  const cameraWorldQuaternion = new THREE.Quaternion();
+  app.camera.getWorldQuaternion(cameraWorldQuaternion);
+  laser.quaternion.copy(cameraWorldQuaternion);
 
   // Set the laser's velocity to move in the direction the camera is facing
-  const cameraDirection = new THREE.Vector3();
-  app.camera.getWorldDirection(cameraDirection);
-  laser.userData.velocity = cameraDirection.multiplyScalar(0.5); // Set speed of the laser
-  laser.rotation.x = Math.PI / 2;
+  const cameraWorldDirection = new THREE.Vector3();
+  app.camera.getWorldDirection(cameraWorldDirection);
+  laser.userData.velocity = cameraWorldDirection.multiplyScalar(0.5); // Set speed of the laser
+
+  // Offset the laser slightly in front of the camera to avoid collision with the player
+  laser.position.add(cameraWorldDirection.clone().multiplyScalar(0.5));
 
   // Add laser to the scene and to the lasers array for tracking
   app.scene.add(laser);
@@ -265,8 +269,9 @@ class App {
         asteroid.position.add(asteroid.userData.velocity);
 
         // Remove the asteroid if it moves too far past the player
-        if (asteroid.position.distanceTo(app.camera.position) < 0.5) {
+        if (asteroid.position.distanceTo(app.camera.position) < 1) {
           console.log("Asteroid reached the player!");
+          app.score -= 1;
           app.scene.remove(asteroid);
           app.asteroids.splice(asteroidIndex, 1);
         }
