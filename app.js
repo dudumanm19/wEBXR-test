@@ -380,7 +380,6 @@ class App {
     app.scene.add(directionalLight);
 
     this.scene.add(starField);
-    this.scene.add(this.reticle);
   }
 }
 
