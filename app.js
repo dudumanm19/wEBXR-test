@@ -16,7 +16,7 @@ class Reticle extends THREE.Object3D {
     this.loader = new THREE.GLTFLoader();
     this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
       // Rotate the reticle model 90 degrees upwards
-      this.rotation.x = Math.PI / 2;
+      //this.rotation.x = Math.PI / 2;
 
       this.add(gltf.scene);
       console.log("Reticle loaded successfully");
@@ -120,7 +120,7 @@ function createLaser() {
   const laser = new THREE.Mesh(laserGeometry, laserMaterial);
 
   // Rotate the laser so that it points forward instead of up (since cylinder geometry points along Y by default)
-  laser.rotation.x = Math.PI / 2;
+  // laser.rotation.x = Math.PI / 2;
 
   // Position the laser at the camera's current position
   const cameraWorldPosition = new THREE.Vector3();
