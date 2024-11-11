@@ -223,7 +223,7 @@ class App {
       this.camera.updateMatrixWorld(true);
 
       // Position the reticle in front of the camera, always at a fixed distance.
-      const distanceInFront = 1; // Distance in meters in front of the camera.
+      const distanceInFront = 2; // Distance in meters in front of the camera.
       const cameraWorldPosition = new THREE.Vector3();
       this.camera.getWorldPosition(cameraWorldPosition);
 
@@ -244,8 +244,8 @@ class App {
       if (!this.game_started) {
         this.game_started = true;
         document.body.classList.add('game-started');
-        // Start spawning asteroids every 2 seconds
-        setInterval(spawnAsteroid, 2000);
+        // Start spawning asteroids every 1.5 seconds
+        setInterval(spawnAsteroid, 1500);
         setInterval(createLaser, 200); // Fire lasers every 200 ms
       }
 
@@ -324,9 +324,9 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     // Create reticle geometry and material
-    const reticleGeometry = new THREE.PlaneGeometry(0.2, 0.2); // Width and height of the reticle
+    const reticleGeometry = new THREE.RingGeometry(0.1, 0.25, 32); // Width and height of the reticle
     const reticleMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+      color: #f06060,
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.8,
@@ -350,7 +350,7 @@ class App {
 
 
     // Create a star field using particles
-    const starCount = 1000; // Number of stars
+    const starCount = 2000; // Number of stars
     const positions = [];
     for (let i = 0; i < starCount; i++) {
       const x = (Math.random() - 0.5) * 200; // Spread out over a large area
@@ -364,7 +364,7 @@ class App {
 
     const starMaterial = new THREE.PointsMaterial({
       color: 0xffffff, // Base color of the star
-      emissive: 0xffffff, // Glow color
+      emissive: #fffcb3, // Glow color
       emissiveIntensity: 1.5, // Intensity of the glow
       roughness: 0.5,
       metalness: 0
