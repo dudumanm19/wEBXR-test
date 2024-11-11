@@ -350,7 +350,7 @@ class App {
 
 
     // Create a star field using particles
-    const starCount = 2000; // Number of stars
+    const starCount = 1000; // Number of stars
     const positions = [];
     for (let i = 0; i < starCount; i++) {
       const x = (Math.random() - 0.5) * 200; // Spread out over a large area
