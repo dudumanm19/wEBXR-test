@@ -231,13 +231,14 @@ class App {
       this.camera.getWorldDirection(cameraWorldDirection);
 
       // Set reticle position in front of the camera.
-      const reticlePosition = cameraWorldPosition.clone()
-          .add(cameraWorldDirection.multiplyScalar(distanceInFront));
+      const reticlePosition = cameraWorldPosition.clone().add(cameraWorldDirection.multiplyScalar(distanceInFront));
       this.reticle.position.copy(reticlePosition);
       this.reticle.visible = true;
 
-      // Align the reticle orientation with the camera using quaternion
-      this.reticle.quaternion.copy(this.camera.quaternion);
+      // Make the reticle face the camera
+      const cameraWorldQuaternion = new THREE.Quaternion();
+      app.camera.getWorldQuaternion(cameraWorldQuaternion);
+      this.reticle.quaternion.copy(cameraWorldQuaternion);
       this.reticle.updateMatrixWorld(true);
 
       // Start the game logic (only runs once)
@@ -324,7 +325,7 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     // Create reticle geometry and material
-    const reticleGeometry = new THREE.RingGeometry(0.1, 0.25, 16); // Width and height of the reticle
+    const reticleGeometry = new THREE.RingGeometry(0.05, 0.1, 8); // Width and height of the reticle
     const reticleMaterial = new THREE.MeshBasicMaterial({
       color: 0xf06060,
       side: THREE.DoubleSide,
@@ -363,7 +364,7 @@ class App {
     starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 
     const starMaterial = new THREE.PointsMaterial({
-      color: 0xffffff, // Base color of the star
+      color: 0xfffcb3, // Base color of the star
       emissive: 0xfffcb3, // Glow color
       emissiveIntensity: 1.5, // Intensity of the glow
       roughness: 0.5,
