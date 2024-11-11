@@ -324,9 +324,9 @@ class App {
     // Initialize our demo scene.
     this.scene = new THREE.Scene();
     // Create reticle geometry and material
-    const reticleGeometry = new THREE.RingGeometry(0.1, 0.25, 32); // Width and height of the reticle
+    const reticleGeometry = new THREE.RingGeometry(0.1, 0.25, 16); // Width and height of the reticle
     const reticleMaterial = new THREE.MeshBasicMaterial({
-      color: #f06060,
+      color: 0xf06060,
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.8,
@@ -364,7 +364,7 @@ class App {
 
     const starMaterial = new THREE.PointsMaterial({
       color: 0xffffff, // Base color of the star
-      emissive: #fffcb3, // Glow color
+      emissive: 0xfffcb3, // Glow color
       emissiveIntensity: 1.5, // Intensity of the glow
       roughness: 0.5,
       metalness: 0
